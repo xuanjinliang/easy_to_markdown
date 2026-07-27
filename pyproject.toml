@@ -1,9 +1,9 @@
 [project]
-name = "pdf-local-model"
+name = "easy-to-markdown"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "xuanjinliang",email = "jinliang.xuan@mobvista.com"}
+    {name = "xuanjinliang",email = "xuanjinliang@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,7 +17,8 @@ dependencies = [
     "paddleocr[doc-parser] (>=3.7.0,<4.0.0)",
     "paddlex (>=3.7.1,<4.0.0)",
     "dashscope (>=1.25.22,<2.0.0)",
-    "numpy (==2.3.5)"
+    "numpy (==2.3.5)",
+    "easyocr (>=1.7.2,<2.0.0)"
 ]
 
 
