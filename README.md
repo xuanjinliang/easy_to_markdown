@@ -1,3 +1,3 @@
-# pdf_to_markdown_sdk
+# pdf_local_model
 
-Use an AI model to generate Markdown
+Test the open-source model
