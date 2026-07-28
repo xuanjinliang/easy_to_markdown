@@ -13,7 +13,7 @@ class EasyOcr:
                  device: Literal["cpu", "cuda:0"] = "cpu",
                  max_workers: int = 4):
         if lang_list is None:
-            lang_list = ['ch_tra', 'en']
+            lang_list = ['ch_sim', 'en']
 
         open_gpu = False if device == "cpu" else True
         model_path = os.path.join(pkg.ModelDir, "easyocr")
@@ -25,15 +25,16 @@ class EasyOcr:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.infer_semaphore = asyncio.Semaphore(max_workers)
 
-    def inference(self, item: str, detail=1, paragraph=False) -> Any:
+    def inference(self, item: str, detail=1, paragraph=False) -> list[Any]:
         result = self.reader.readtext(
             item,
             detail=detail,
-            paragraph=paragraph
+            paragraph=paragraph,
+            batch_size=2
         )
         return result
 
-    async def handle_item(self, item: str, detail=1, paragraph=False) -> Any:
+    async def handle_item(self, item: str, detail=1, paragraph=False) -> list[Any]:
 
         loop = asyncio.get_running_loop()
 
@@ -48,7 +49,7 @@ class EasyOcr:
 
         return result
 
-    async def advanced_recognition(self, images: list[str], detail=1, paragraph=False) -> list[Any] | None:
+    async def advanced_recognition(self, images: list[str], detail=1, paragraph=False) -> list[Any]:
         if not images:
             return []
 
@@ -61,8 +62,8 @@ class EasyOcr:
         results = await asyncio.gather(*tasks)
         return results
 
-    async def simple_recognition(self, images: list[str]) -> list[Any] | None:
+    async def simple_recognition(self, images: list[str]) -> list[Any]:
         return await self.advanced_recognition(images, detail=0)
 
-    async def paragraph_recognition(self, images: list[str]) -> list[Any] | None:
+    async def paragraph_recognition(self, images: list[str]) -> list[Any]:
         return await self.advanced_recognition(images, detail=0, paragraph=True)

@@ -29,3 +29,51 @@ class TestEasyOcr(unittest.IsolatedAsyncioTestCase):
         img_list = [image_path1, image_path2]
         result = await easy_ocr.advanced_recognition(img_list)
         print(result)
+
+    async def test_simple_recognition(self):
+        easy_ocr = EasyOcr()
+
+        print(pkg.PdfTempDir)
+        dir_path = Path(os.path.join(pkg.PdfTempDir, 'aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159', 'crops_img'))
+
+        image_path1 = os.path.join(dir_path,
+                                   'page_2',
+                                   "4_table",
+                                   "table_crop",
+                                   "row_7_0.webp"
+                                   )
+
+        image_path2 = os.path.join(dir_path,
+                                   'page_2',
+                                   "4_table",
+                                   "table_crop",
+                                   "row_7_1.webp"
+                                   )
+
+        img_list = [image_path1, image_path2]
+        result = await easy_ocr.simple_recognition(img_list)
+        print(result)
+
+    async def test_paragraph_recognition(self):
+        easy_ocr = EasyOcr()
+
+        print(pkg.PdfTempDir)
+        dir_path = Path(os.path.join(pkg.PdfTempDir, 'aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159', 'crops_img'))
+
+        image_path1 = os.path.join(dir_path,
+                                   'page_2',
+                                   "4_table",
+                                   "table_crop",
+                                   "row_7_0.webp"
+                                   )
+
+        image_path2 = os.path.join(dir_path,
+                                   'page_2',
+                                   "4_table",
+                                   "table_crop",
+                                   "row_7_1.webp"
+                                   )
+
+        img_list = [image_path1, image_path2]
+        result = await easy_ocr.paragraph_recognition(img_list)
+        print(result)
