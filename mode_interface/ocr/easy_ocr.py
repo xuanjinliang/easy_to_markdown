@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 class EasyOcr:
     def __init__(self,
-                 lang_list=None,
+                 lang_list: list[str] | None = None,
                  device: Literal["cpu", "cuda:0"] = "cpu",
                  max_workers: int = 4):
         if lang_list is None:
