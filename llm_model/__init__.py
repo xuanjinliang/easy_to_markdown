@@ -16,6 +16,16 @@ TextFormatType = Union[
     list[Type[BaseModel]]
 ]
 
+class ModelInfo(BaseModel):
+    input_tokens: int = 0
+    output_tokens: int = 0
+    model_version: str = ""
+
+class AdvancedOCRVL(BaseModel):
+    location: list[float] = []
+    rotate_rect: list[float] = []
+    text: str = ""
+
 
 class ClientConfig(BaseModel):
     model: str | None = None

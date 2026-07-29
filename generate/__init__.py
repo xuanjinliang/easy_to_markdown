@@ -2,6 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from pkg.pdf_to_image import ImageResponse
+from mode_interface.ocr import OCRContent
 
 
 class ParsingResult(BaseModel):
@@ -23,8 +24,7 @@ class ParsingResult(BaseModel):
         min_length=4,
         max_length=4
     )
-    ocr_model: list[ModelInfo] = []
-    ocr_content: list[AdvancedOCRVL] = []
+    ocr_content: list[OCRContent] = []
     table_model: list[str] = []
     table_info: Optional[TableInfo] = None
 
@@ -48,19 +48,12 @@ class ContainerInfo(BaseModel):
     bbox: list[float] = Field(..., min_length=4, max_length=4)
 
 
-class AdvancedOCRVL(BaseModel):
-    location: list[float] = []
-    rotate_rect: list[float] = []
-    text: str = ""
-
-
 class ColumnsInfo(ContainerInfo):
     image_path: str
     columns_list: list[CellInfo]
     category_type: Literal["formula", "text", "unknown"] = "text"
-    ocr_model: list[ModelInfo] = []
-    ocr_content: list[AdvancedOCRVL] = []
-    columns_blocks: FileParsingResult = None
+    ocr_content: list[OCRContent] = []
+    columns_blocks: FileParsingResult | None = None
 
 
 class RowInfo(ContainerInfo):
@@ -72,12 +65,6 @@ class TableInfo(ContainerInfo):
     image_path: str  # Image path
     img_output_dir: str  # Image dir
     table_list: list[RowInfo] = []
-
-
-class ModelInfo(BaseModel):
-    input_tokens: int = 0
-    output_tokens: int = 0
-    model_version: str = ""
 
 
 class FileParsingResult(BaseModel):
