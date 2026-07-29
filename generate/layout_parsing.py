@@ -526,8 +526,7 @@ class LayoutParsing:
     async def ocr_handle_item(self,
                               blocks: list[ParsingResult]) -> list[ParsingResult]:
 
-        image_list: list[str] = []
-        text_blocks_index: list[int] = []
+        text_blocks_index: list[tuple[int, str]] = []
         for index, block in enumerate(blocks):
             canonical = block.block_label_type
             match canonical:
@@ -542,8 +541,7 @@ class LayoutParsing:
             if crop_img_path is None:
                 continue
 
-            image_list.append(crop_img_path)
-            text_blocks_index.append(index)
+            text_blocks_index.append((index, crop_img_path))
 
         loop = asyncio.get_running_loop()
 
@@ -551,11 +549,10 @@ class LayoutParsing:
             results = await loop.run_in_executor(
                 self.executor,
                 self.ocr_inference,
-                image_list,
+                [x[1] for x in text_blocks_index],
             )
 
-        for i, ocr_content in enumerate(results):
-            index = text_blocks_index[i]
+        for (index, _), ocr_content in zip(text_blocks_index, results):
             blocks[index].ocr_content = ocr_content
 
         return blocks
