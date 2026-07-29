@@ -17,8 +17,10 @@ class PPDocLayout(LayoutModel):
         model_path = os.path.join(pkg.ModelDir, "paddle", "PP-DocLayoutV3")
         ensure_dir(model_path)
 
+        enable_hpi = False
         if device == "cuda:0":
             device = "gpu:0"
+            enable_hpi = True
 
         self.model = LayoutDetection(
             model_name="PP-DocLayoutV3",
@@ -26,7 +28,8 @@ class PPDocLayout(LayoutModel):
             device=device,
             layout_merge_bboxes_mode=layout_merge_bboxes_mode,
             threshold=conf,
-            layout_nms=layout_nms
+            layout_nms=layout_nms,
+            enable_hpi=enable_hpi
         )
 
     @staticmethod

@@ -1,6 +1,5 @@
 import easyocr
 from typing import Literal, Any
-from pydantic import Field
 import os
 import pkg
 import asyncio
@@ -29,8 +28,7 @@ class EasyOcr:
         result = self.reader.readtext(
             item,
             detail=detail,
-            paragraph=paragraph,
-            batch_size=2
+            paragraph=paragraph
         )
         return result
 
