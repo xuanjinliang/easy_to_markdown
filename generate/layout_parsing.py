@@ -5,8 +5,8 @@ from typing import Literal
 from pkg.pdf_to_image import ImageResponse
 from concurrent.futures import ThreadPoolExecutor
 from mode_interface.layout.pp_doclayout import PPDocLayout
-from generate import (FileParsingResult, ParsingResult, ModelInfo, TableInfo,
-                      TableCellCategory, ColumnsInfo, AdvancedOCRVL)
+from generate import (FileParsingResult, ParsingResult, TableInfo,
+                      TableCellCategory, ColumnsInfo)
 from generate.block_process import set_block_process
 from pkg.common import ensure_dir, chunk_list, remove_fenced_code_block
 from PIL import Image
@@ -14,11 +14,10 @@ from pathlib import Path
 import cv2
 from generate.font_position import layout_labels
 from typing import Optional
-from llm_model import ClientConfig
-from llm_model.ali_qwen import QwenOcrDashscope, QwenOcrTaskType
 from mode_interface.table import TablePosition
 from generate.table_cell_position import clean_cell_detections, table_cell_category
 from mode_interface.table.pp_table_classification import PPTableClassification
+from mode_interface.ocr import pp_ocr, OCRContent
 import logging
 from logging import NullHandler
 
@@ -64,8 +63,9 @@ class LayoutParsing:
         )
 
         # ocr
-        config = ClientConfig(model="qwen3.5-ocr")
-        self.client = QwenOcrDashscope(config)
+        # config = ClientConfig(model="qwen3.5-ocr")
+        # self.client = QwenOcrDashscope(config)
+        self.ocr_model = pp_ocr.PPOcr(device=parsing_info.device)
 
         # table
         self.table_classification = PPTableClassification()
@@ -343,124 +343,232 @@ class LayoutParsing:
 
         return results
 
-    async def ocr_process(self, img_path: str, task_type: QwenOcrTaskType) -> tuple[
-        ModelInfo, list[AdvancedOCRVL] | None]:
-        messages = self.client.generate_base64(enable_rotate=False, images=[img_path])
-        response = await self.client.request_llm(
-            messages=messages,
-            task=task_type
-        )
+    # async def ocr_process(self, img_path: str, task_type: QwenOcrTaskType) -> tuple[
+    #     ModelInfo, list[AdvancedOCRVL] | None]:
+    #     messages = self.client.generate_base64(enable_rotate=False, images=[img_path])
+    #     response = await self.client.request_llm(
+    #         messages=messages,
+    #         task=task_type
+    #     )
+    #
+    #     input_tokens = response.result.get("input_tokens", 0)
+    #     output_tokens = response.result.get("output_tokens", 0)
+    #     model_version = response.result.get("model_version", "")
+    #
+    #     model_info = ModelInfo(
+    #         input_tokens=input_tokens,
+    #         output_tokens=output_tokens,
+    #         model_version=model_version
+    #     )
+    #
+    #     if not response.success:
+    #         return model_info, None
+    #
+    #     text = response.result.get("text", "")
+    #
+    #     is_json = isinstance(text, dict) or isinstance(text, list)
+    #     if (is_json and len(text) == 0) or (isinstance(text, str) and len(text.strip()) == 0):
+    #         return model_info, []
+    #
+    #     data = text if is_json else [
+    #         AdvancedOCRVL(text=remove_fenced_code_block(text)),
+    #     ]
+    #     return model_info, [AdvancedOCRVL.model_validate(item) for item in data]
 
-        input_tokens = response.result.get("input_tokens", 0)
-        output_tokens = response.result.get("output_tokens", 0)
-        model_version = response.result.get("model_version", "")
+    # async def ocr_table_info_cell(self, cell: ColumnsInfo) -> ColumnsInfo:
+    #     async with self.infer_semaphore:
+    #         image_path = cell.image_path
+    #         exec_num = 0
+    #         while exec_num < self.parsing_info.max_retry:
+    #             task_type: QwenOcrTaskType = "formula_recognition" if cell.category_type == "formula" else "advanced_recognition"
+    #             ocr_model, chat_data = await self.ocr_process(img_path=image_path, task_type=task_type)
+    #             cell.ocr_model.append(ocr_model)
+    #             if chat_data is not None:
+    #                 cell.ocr_content = chat_data
+    #                 return cell
+    #
+    #             exec_num += 1
+    #
+    #     return cell
+    #
+    # async def ocr_table_info(self, table_info: TableInfo) -> TableInfo:
+    #     table_list = table_info.table_list
+    #     file_task = []
+    #     for rows in table_list:
+    #         for cols in rows.rows_list:
+    #             if cols.category_type != "unknown":
+    #                 file_task.append(asyncio.create_task(self.ocr_table_info_cell(cell=cols)))
+    #             else:
+    #                 file_parsing_result = cols.columns_blocks
+    #                 if file_parsing_result is not None:
+    #                     cols.columns_blocks = await self.ocr_handle_item(file_parsing_result=file_parsing_result)
+    #
+    #     if len(file_task) > 0:
+    #         await asyncio.gather(*file_task)
+    #
+    #     return table_info
 
-        model_info = ModelInfo(
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            model_version=model_version
-        )
+    # async def ocr_process_item(self, block: ParsingResult) -> tuple[ParsingResult, Optional[bool]]:
+    #     canonical = block.block_label_type
+    #     task_type: QwenOcrTaskType = "advanced_recognition"
+    #     match canonical:
+    #         case "image":
+    #             return block, True
+    #         case "formula":
+    #             task_type = "formula_recognition"
+    #         case "table":
+    #             if block.table_info is None:
+    #                 return block, True
+    #
+    #             block.table_info = await self.ocr_table_info(table_info=block.table_info)
+    #             return block, True
+    #
+    #     crop_img_path = block.crop_path
+    #     if crop_img_path is None:
+    #         return block, None
+    #
+    #     ocr_image, chat_data = await self.ocr_process(img_path=crop_img_path, task_type=task_type)
+    #
+    #     if block.ocr_model is None:
+    #         block.ocr_model = []
+    #
+    #     block.ocr_model.append(ocr_image)
+    #
+    #     if chat_data is None:
+    #         return block, False
+    #
+    #     block.ocr_content = chat_data
+    #
+    #     return block, True
 
-        if not response.success:
-            return model_info, None
+    # async def ocr_handle_item(self,
+    #                           file_parsing_result: FileParsingResult) -> FileParsingResult:
+    #     async with self.infer_semaphore:
+    #         image_path = file_parsing_result.img_info.image_path
+    #         blocks = file_parsing_result.blocks
+    #
+    #         for i, block in enumerate(blocks):
+    #             exec_num = 0
+    #             while exec_num < self.parsing_info.max_retry:
+    #                 try:
+    #                     block, success = await self.ocr_process_item(block)
+    #                     if success:
+    #                         blocks[i] = block
+    #                         break
+    #                 except Exception as e:
+    #                     logger.error(f"file {image_path} has ocr_error: {e}")
+    #                 finally:
+    #                     exec_num += 1
+    #
+    #     file_parsing_result.blocks = blocks
+    #     return file_parsing_result
 
-        text = response.result.get("text", "")
-
-        is_json = isinstance(text, dict) or isinstance(text, list)
-        if (is_json and len(text) == 0) or (isinstance(text, str) and len(text.strip()) == 0):
-            return model_info, []
-
-        data = text if is_json else [
-            AdvancedOCRVL(text=remove_fenced_code_block(text)),
+    async def ocr_table_info_cell(self, cell_list: list[ColumnsInfo]) -> list[ColumnsInfo]:
+        tasks = [
+            (i, cell.image_path)
+            for i, cell in enumerate(cell_list)
+            if cell.image_path is not None
         ]
-        return model_info, [AdvancedOCRVL.model_validate(item) for item in data]
 
-    async def ocr_table_info_cell(self, cell: ColumnsInfo) -> ColumnsInfo:
+        loop = asyncio.get_running_loop()
         async with self.infer_semaphore:
-            image_path = cell.image_path
-            exec_num = 0
-            while exec_num < self.parsing_info.max_retry:
-                task_type: QwenOcrTaskType = "formula_recognition" if cell.category_type == "formula" else "advanced_recognition"
-                ocr_model, chat_data = await self.ocr_process(img_path=image_path, task_type=task_type)
-                cell.ocr_model.append(ocr_model)
-                if chat_data is not None:
-                    cell.ocr_content = chat_data
-                    return cell
+            results = await loop.run_in_executor(
+                self.executor,
+                self.ocr_inference,
+                [x[1] for x in tasks],
+            )
 
-                exec_num += 1
+        for (index, _), ocr_content in zip(tasks, results):
+            cell_list[index].ocr_content = ocr_content
 
-        return cell
+        return cell_list
 
     async def ocr_table_info(self, table_info: TableInfo) -> TableInfo:
         table_list = table_info.table_list
-        file_task = []
+        columns_info_list: list[ColumnsInfo] = []
         for rows in table_list:
             for cols in rows.rows_list:
                 if cols.category_type != "unknown":
-                    file_task.append(asyncio.create_task(self.ocr_table_info_cell(cell=cols)))
+                    columns_info_list.append(cols)
                 else:
                     file_parsing_result = cols.columns_blocks
                     if file_parsing_result is not None:
-                        cols.columns_blocks = await self.ocr_handle_item(file_parsing_result=file_parsing_result)
+                        cols.columns_blocks = await self.ocr_handel_file_parsing(
+                            file_parsing_result=file_parsing_result)
 
-        if len(file_task) > 0:
-            await asyncio.gather(*file_task)
+        if len(columns_info_list) > 0:
+            tasks = []
+            for batch in chunk_list(columns_info_list, 5):
+                task = asyncio.create_task(self.ocr_table_info_cell(batch))
+                tasks.append(task)
+
+            results = await asyncio.gather(*tasks)
+            columns_results = [x for r in results for x in r]
+            for i, result in enumerate(columns_results):
+                columns_info_list[i] = result
 
         return table_info
 
-    async def ocr_process_item(self, block: ParsingResult) -> tuple[ParsingResult, Optional[bool]]:
-        canonical = block.block_label_type
-        task_type: QwenOcrTaskType = "advanced_recognition"
-        match canonical:
-            case "image":
-                return block, True
-            case "formula":
-                task_type = "formula_recognition"
-            case "table":
-                if block.table_info is None:
-                    return block, True
+    def ocr_inference(self, image_list: list[str]) -> list[OCRContent]:
+        parsing_info_list = []
+        exec_num = 0
+        while exec_num < self.parsing_info.max_retry:
+            try:
+                parsing_info_list = self.ocr_model.advanced_recognition(image_list=image_list)
+                break
+            except Exception as e:
+                logger.error(e)
+            finally:
+                exec_num += 1
 
-                block.table_info = await self.ocr_table_info(table_info=block.table_info)
-                return block, True
-
-        crop_img_path = block.crop_path
-        if crop_img_path is None:
-            return block, None
-
-        ocr_image, chat_data = await self.ocr_process(img_path=crop_img_path, task_type=task_type)
-
-        if block.ocr_model is None:
-            block.ocr_model = []
-
-        block.ocr_model.append(ocr_image)
-
-        if chat_data is None:
-            return block, False
-
-        block.ocr_content = chat_data
-
-        return block, True
+        return parsing_info_list
 
     async def ocr_handle_item(self,
-                              file_parsing_result: FileParsingResult) -> FileParsingResult:
+                              blocks: list[ParsingResult]) -> list[ParsingResult]:
+
+        image_list: list[str] = []
+        text_blocks_index: list[int] = []
+        for index, block in enumerate(blocks):
+            canonical = block.block_label_type
+            match canonical:
+                case "image":
+                    continue
+                case "table":
+                    if block.table_info is not None:
+                        block.table_info = await self.ocr_table_info(table_info=block.table_info)
+                    continue
+
+            crop_img_path = block.crop_path
+            if crop_img_path is None:
+                continue
+
+            image_list.append(crop_img_path)
+            text_blocks_index.append(index)
+
+        loop = asyncio.get_running_loop()
+
         async with self.infer_semaphore:
-            image_path = file_parsing_result.img_info.image_path
-            blocks = file_parsing_result.blocks
+            results = await loop.run_in_executor(
+                self.executor,
+                self.ocr_inference,
+                image_list,
+            )
 
-            for i, block in enumerate(blocks):
-                exec_num = 0
-                while exec_num < self.parsing_info.max_retry:
-                    try:
-                        block, success = await self.ocr_process_item(block)
-                        if success:
-                            blocks[i] = block
-                            break
-                    except Exception as e:
-                        logger.error(f"file {image_path} has ocr_error: {e}")
-                    finally:
-                        exec_num += 1
+        for i, ocr_content in enumerate(results):
+            index = text_blocks_index[i]
+            blocks[index].ocr_content = ocr_content
 
-        file_parsing_result.blocks = blocks
+        return blocks
+
+    async def ocr_handel_file_parsing(self, file_parsing_result: FileParsingResult) -> FileParsingResult:
+        blocks = file_parsing_result.blocks
+        tasks = []
+        for batch in chunk_list(blocks, 5):
+            task = asyncio.create_task(self.ocr_handle_item(batch))
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
+        file_parsing_result.blocks = [x for r in results for x in r]
         return file_parsing_result
 
     async def run(self,
@@ -480,10 +588,15 @@ class LayoutParsing:
 
         file_parsing_data = await self.table_handle(file_parsing_data)
 
-        file_task = [
-            asyncio.create_task(self.ocr_handle_item(file_parsing_result))
+        file_parsing_data = [
+            await self.ocr_handel_file_parsing(file_parsing_result)
             for file_parsing_result in file_parsing_data
         ]
-        file_parsing_data = await asyncio.gather(*file_task)
+
+        # file_task = [
+        #     asyncio.create_task(self.ocr_handle_item(file_parsing_result))
+        #     for file_parsing_result in file_parsing_data
+        # ]
+        # file_parsing_data = await asyncio.gather(*file_task)
 
         return file_parsing_data

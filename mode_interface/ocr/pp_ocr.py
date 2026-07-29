@@ -55,7 +55,7 @@ class PPOcr:
             bbox=bbox,
         )
 
-    def advanced_recognition(self, image_list: list[str]):
+    def advanced_recognition(self, image_list: list[str]) -> list[OCRContent]:
         if not image_list:
             return []
 
