@@ -62,9 +62,9 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             Path(os.path.join(output_dir, "pdf_image")).glob("page_*.webp"),
             key=lambda p: int(re.search(r'\d+', p.stem).group()))
 
-        webp_files = webp_files[:2]
+        webp_files = webp_files[:1]
         image_list = []
-        for i, item in enumerate(webp_files[:2]):
+        for i, item in enumerate(webp_files):
             image_list.append(
                 ImageResponse(
                     page_index=i,

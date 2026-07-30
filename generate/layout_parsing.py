@@ -31,7 +31,7 @@ class ParsingInfo(BaseModel):
     device: Literal["cpu", "cuda:0"] = "cpu"
     conf: float = Field(default=0.25, gt=0, le=1)
     table_conf: float = Field(default=0.1, gt=0, le=1)
-    padding: int = 10
+    padding: int = 15
     max_workers: int = Field(default=4, ge=1)
     max_retry: int = 3
     font_scale: float = 0.6
