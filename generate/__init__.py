@@ -24,7 +24,7 @@ class ParsingResult(BaseModel):
         min_length=4,
         max_length=4
     )
-    ocr_content: list[OCRContent] = []
+    ocr_content: OCRContent | None = None
     table_model: list[str] = []
     table_info: Optional[TableInfo] = None
 
@@ -52,7 +52,7 @@ class ColumnsInfo(ContainerInfo):
     image_path: str
     columns_list: list[CellInfo]
     category_type: Literal["formula", "text", "unknown"] = "text"
-    ocr_content: list[OCRContent] = []
+    ocr_content: OCRContent | None = None
     columns_blocks: FileParsingResult | None = None
 
 
