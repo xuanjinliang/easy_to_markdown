@@ -303,7 +303,9 @@ class LayoutParsing:
         exec_num = 0
         while exec_num < self.parsing_info.max_retry:
             try:
-                parsing_info_list = self.model.format(image_list=image_list)
+                parsing_info_list = self.model.format(
+                    image_list=[item.image_path for item in image_list]
+                )
                 break
             except Exception as e:
                 logger.error(e)
@@ -315,13 +317,18 @@ class LayoutParsing:
         for i, blocks in enumerate(parsing_info_list):
             image_info = image_list[i]
 
-            blocks = set_block_process(blocks=blocks)
-            blocks = self.crop_blocks(image_info=image_info, blocks=blocks, output_dir=output_dir)
-            vis_path = self.draw_layout_boxes(image_info=image_info, blocks=blocks, output_dir=output_dir)
+            parsing_result = [
+                ParsingResult(**block.model_dump())
+                for block in blocks
+            ]
+
+            parsing_result = set_block_process(blocks=parsing_result)
+            parsing_result = self.crop_blocks(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
+            vis_path = self.draw_layout_boxes(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
             file_parsing_list.append(FileParsingResult(
                 img_info=image_info,
                 vis_path=vis_path,
-                blocks=blocks,
+                blocks=parsing_result,
             ))
 
         return file_parsing_list

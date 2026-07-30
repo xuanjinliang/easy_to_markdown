@@ -1,11 +1,10 @@
 import os
 import pkg
 from pkg.common import ensure_dir
-from mode_interface.layout import LayoutModel
+from mode_interface.layout import LayoutModel, LayoutResult
 from paddleocr import LayoutDetection
 from paddlex.inference.models.layout_analysis.result import LayoutAnalysisResult
 from typing import Literal
-from generate import ParsingResult, ImageResponse
 
 
 class PPDocLayout(LayoutModel):
@@ -33,7 +32,7 @@ class PPDocLayout(LayoutModel):
         )
 
     @staticmethod
-    def process_item(result: LayoutAnalysisResult) -> list[ParsingResult]:
+    def process_item(result: LayoutAnalysisResult) -> list[LayoutResult]:
         img = result.img
         img_res = img.get('res', None)
 
@@ -62,7 +61,7 @@ class PPDocLayout(LayoutModel):
 
             # print(f"box.xyxy --> {box.xyxy}, box.cls --> {box.cls}, box.conf --> {box.conf}")
 
-            blocks.append(ParsingResult(
+            blocks.append(LayoutResult(
                 block_id=i + 1,
                 block_label=label,
                 block_bbox=[
@@ -81,12 +80,12 @@ class PPDocLayout(LayoutModel):
 
         return blocks
 
-    def format(self, image_list: list[ImageResponse]) -> list[list[ParsingResult]]:
+    def format(self, image_list: list[str]) -> list[list[LayoutResult]]:
         if len(image_list) == 0:
             return []
 
         results = self.model.predict(
-            input=[image_info.image_path for image_info in image_list],
+            input=image_list,
             batch_size=len(image_list)
         )
 

@@ -3,19 +3,13 @@ from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from pkg.pdf_to_image import ImageResponse
 from mode_interface.ocr import OCRContent
+from mode_interface.layout import LayoutResult
 
 
-class ParsingResult(BaseModel):
-    block_id: int = Field(ge=0)
-    block_label: str
+class ParsingResult(LayoutResult):
     block_label_type: str = ""
     level: int = 0
     block_content: str = Field(default="")
-    block_bbox: list[float] = Field(..., min_length=4, max_length=4)
-    block_bbox_norm: list[float] = Field(..., min_length=4, max_length=4)
-    reading_order: Optional[int] = None
-    group_id: int = Field(ge=0)
-    score: float
     remove: bool = False
     remove_reason: str = ""
     crop_path: Optional[str] = Field(default=None)
