@@ -30,6 +30,7 @@ class ParsingInfo(BaseModel):
     imgsz: int = 1024
     device: Literal["cpu", "cuda:0"] = "cpu"
     conf: float = Field(default=0.25, gt=0, le=1)
+    table_conf: float = Field(default=0.1, gt=0, le=1)
     padding: int = 10
     max_workers: int = Field(default=4, ge=1)
     max_retry: int = 3
@@ -58,7 +59,7 @@ class LayoutParsing:
         # table layout
         self.table_model = PPDocLayout(
             device=parsing_info.device,
-            conf=0.1,
+            conf=parsing_info.table_conf,
             layout_merge_bboxes_mode="small"
         )
 
