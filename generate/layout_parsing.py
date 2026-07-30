@@ -83,7 +83,7 @@ class LayoutParsing:
         exec_num = 0
         while exec_num < self.parsing_info.max_retry:
             try:
-                parsing_info_list = self.table_model.format(image_list=image_list)
+                parsing_info_list = self.table_model.format(image_list=[item.image_path for item in image_list])
                 break
             except Exception as e:
                 logger.error(e)
@@ -97,10 +97,15 @@ class LayoutParsing:
                 ))
                 continue
 
+            parsing_result = [
+                ParsingResult(**block.model_dump())
+                for block in blocks
+            ]
+
             image_info = image_list[i]
 
-            blocks = set_block_process(blocks=blocks)
-            category = table_cell_category(blocks=blocks,
+            parsing_result = set_block_process(blocks=parsing_result)
+            category = table_cell_category(blocks=parsing_result,
                                            cell_image=image_info,
                                            table_w=table_width,
                                            table_h=table_height)
@@ -109,13 +114,13 @@ class LayoutParsing:
                 category_type=category,
             )
             if category == "unknown":
-                blocks = self.crop_blocks(image_info=image_info, blocks=blocks, output_dir=output_dir)
-                vis_path = self.draw_layout_boxes(image_info=image_info, blocks=blocks, output_dir=output_dir)
+                parsing_result = self.crop_blocks(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
+                vis_path = self.draw_layout_boxes(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
 
                 cell_category.parsing_result = FileParsingResult(
                     img_info=image_info,
                     vis_path=vis_path,
-                    blocks=blocks,
+                    blocks=parsing_result,
                 )
 
             category_list.append(cell_category)
