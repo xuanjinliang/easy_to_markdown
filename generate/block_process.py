@@ -53,8 +53,8 @@ def calc_overlap_ratio(block1: ParsingResult, block2: ParsingResult) -> tuple[fl
 
 def filter_overlap_by_area(
         blocks: list[ParsingResult],
-        threshold=0.6,
-        mode: Literal["max", "min"] = "max"
+        threshold,
+        mode: Literal["max", "min"]
 ):
     if len(blocks) < 2:
         return
@@ -82,12 +82,20 @@ def filter_overlap_by_area(
                 keep_block = block
 
 
-def remove_repeat_blocks(blocks: list[ParsingResult]) -> list[ParsingResult]:
+def remove_repeat_blocks(
+        blocks: list[ParsingResult],
+        threshold=0.6,
+        mode: Literal["max", "min"] = "max"
+) -> list[ParsingResult]:
     block_bbox_list = [parsing_result.block_bbox for parsing_result in blocks]
     overlap_result = get_overlap_result_np(block_bbox_list, no_duplicate=True)
     for item in overlap_result:
         if len(item.overlap) == 0:
             continue
-        filter_overlap_by_area([blocks[item.index]] + [blocks[index] for index in item.overlap])
+        filter_overlap_by_area(
+            [blocks[item.index]] + [blocks[index] for index in item.overlap],
+            threshold=threshold,
+            mode=mode
+        )
 
     return blocks
