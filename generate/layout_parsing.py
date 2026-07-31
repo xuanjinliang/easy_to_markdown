@@ -419,6 +419,9 @@ class LayoutParsing:
 
         text_blocks_index: list[tuple[int, str]] = []
         for index, block in enumerate(blocks):
+            if block.remove:
+                continue
+
             canonical = block.block_label_type
             match canonical:
                 case "image":
