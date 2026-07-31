@@ -7,8 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from mode_interface.layout.pp_doclayout import PPDocLayout
 from generate import (FileParsingResult, ParsingResult, TableInfo,
                       TableCellCategory, ColumnsInfo)
-from generate.block_process import set_block_process
-from pkg.common import ensure_dir, chunk_list, remove_fenced_code_block
+from generate.block_process import set_block_process, remove_repeat_blocks
+from pkg.common import ensure_dir, chunk_list
 from PIL import Image
 from pathlib import Path
 import cv2
@@ -27,11 +27,10 @@ logger.addHandler(NullHandler())
 
 class ParsingInfo(BaseModel):
     image_list: list[ImageResponse]
-    imgsz: int = 1024
     device: Literal["cpu", "cuda:0"] = "cpu"
     conf: float = Field(default=0.25, gt=0, le=1)
     table_conf: float = Field(default=0.1, gt=0, le=1)
-    padding: int = 15
+    padding: int = 12
     max_workers: int = Field(default=4, ge=1)
     max_retry: int = 3
     font_scale: float = 0.6
@@ -329,6 +328,7 @@ class LayoutParsing:
             ]
 
             parsing_result = set_block_process(blocks=parsing_result)
+            parsing_result = remove_repeat_blocks(blocks=parsing_result)
             parsing_result = self.crop_blocks(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
             vis_path = self.draw_layout_boxes(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
             file_parsing_list.append(FileParsingResult(
