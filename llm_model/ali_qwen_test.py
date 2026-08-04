@@ -7,10 +7,9 @@ import json
 from pathlib import Path
 from pkg.image_handle import image_to_seed
 from pkg.common import remove_fenced_code_block
-from llm_model import logger, ClientConfig
+from llm_model import logger, ClientConfig, AdvancedOCRVL
 from llm_model.ali_qwen import QwenClient, QwenOcrDashscope
 from pydantic import BaseModel
-from generate import AdvancedOCRVL
 import logging
 
 logging.basicConfig(level=logging.INFO)
