@@ -1,9 +1,11 @@
+from multiprocessing.pool import worker
+
 from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
 from mlx_vlm import load, generate
 from mlx_vlm.prompt_utils import apply_chat_template
 
 from llm_model import LocalModelConfig
-from llm_model.qwen3_vl import QwenTransformersModel
+from llm_model.qwen3_vl import QwenTransformersModel, QwenMlxModel
 import os
 import pkg
 import unittest
@@ -86,7 +88,7 @@ class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
 
         images = [
             os.path.join(pkg.PdfTempDir,
-                         "/aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/2_doc_title.webp")
+                         "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/2_doc_title.webp")
         ]
         prompt = "Describe this image."
 
@@ -111,7 +113,7 @@ class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
         model_path = os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-4B-Instruct")
         qwen_transformers_model = QwenTransformersModel(config=LocalModelConfig(
             model_path=model_path,
-            temperature=0
+            temperature=0,
         ))
 
         image_list = [
@@ -127,4 +129,26 @@ class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
             input_list.append(input_prompt)
 
         results = await qwen_transformers_model.request_vllm(messages=input_list)
+        print(results)
+
+    async def test_qwen_mlx_model(self):
+        model_path = os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-4B-Instruct-8bit")
+        qwen_mlx_model = QwenMlxModel(config=LocalModelConfig(
+            model_path=model_path,
+            temperature=0
+        ))
+
+        image_list = [
+            os.path.join(pkg.PdfTempDir,
+                         "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/1_header.webp"),
+            os.path.join(pkg.PdfTempDir,
+                         "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/2_doc_title.webp")
+        ]
+
+        input_list = []
+        for image in image_list:
+            input_prompt = qwen_mlx_model.preprocess_image(prompt="Describe this image.", images=[image])
+            input_list.append(input_prompt)
+
+        results = await qwen_mlx_model.request_vllm(messages=input_list)
         print(results)

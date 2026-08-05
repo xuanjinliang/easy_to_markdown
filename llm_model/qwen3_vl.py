@@ -8,6 +8,8 @@ from llm_model import LocalModelConfig, ModelInfo
 from llm_model.interface import LocalModelInterface
 from pkg.result import Result
 from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
+from mlx_vlm import load, generate
+from mlx_vlm.prompt_utils import apply_chat_template
 from typing import Any
 
 
@@ -134,3 +136,89 @@ class QwenTransformersModel(LocalModelInterface):
 
         list_data = await asyncio.gather(*tasks)
         return [x for r in list_data for x in r]
+
+
+class QwenMlxModel(LocalModelInterface):
+    def __init__(self, config: LocalModelConfig):
+        model_path = config.model_path
+        if not os.path.exists(model_path):
+            model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+
+        self.model_path = model_path
+        self.max_output_tokens = config.max_output_tokens
+        self.temperature = config.temperature
+        self.executor = ThreadPoolExecutor(max_workers=config.workers)
+        self.infer_semaphore = asyncio.Semaphore(config.workers)
+
+    def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
+        content = {}
+
+        if images is not None and len(images) > 0:
+            content["images"] = images
+
+        if prompt is not None and len(prompt) > 0:
+            content["prompt"] = prompt
+
+        return [content]
+
+    def inference(self, messages: list[dict[str, Any]]) -> Result:
+
+        message = messages[0]
+        prompt = message.get("prompt", "")
+        images = message.get("images", [])
+
+        model, processor = load(self.model_path)
+        config = model.config
+
+        formatted_prompt = apply_chat_template(
+            processor, config, prompt, num_images=len(images)
+        )
+
+        output = generate(
+            model=model,
+            processor=processor,
+            prompt=formatted_prompt,
+            image=images,
+            verbose=False,
+            temperature=self.temperature,
+            max_tokens=self.max_output_tokens,
+        )
+
+        model_version = Path(self.model_path).name
+
+        model_info = ModelInfo(
+            input_tokens=output.prompt_tokens,
+            output_tokens=output.generation_tokens,
+            model_version=model_version,
+            content=output.text
+        )
+        result = Result(
+            success=True,
+            result=model_info
+        )
+
+        return result
+
+    async def handle_item(self, messages: list[dict[str, Any]]) -> Result:
+        loop = asyncio.get_running_loop()
+
+        async with self.infer_semaphore:
+            results = await loop.run_in_executor(
+                self.executor,
+                self.inference,
+                messages,
+            )
+
+        return results
+
+    async def request_vllm(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
+        if not messages:
+            return []
+
+        tasks = []
+
+        for message in messages:
+            task = asyncio.create_task(self.handle_item(message))
+            tasks.append(task)
+
+        return await asyncio.gather(*tasks)

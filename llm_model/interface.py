@@ -47,11 +47,6 @@ class LocalModelInterface(ABC, Generic[T]):
     def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
         pass
 
-    @staticmethod
-    @abstractmethod
-    def generate_message(content: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        pass
-
     @abstractmethod
     async def request_vllm(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
         pass
