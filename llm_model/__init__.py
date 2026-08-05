@@ -6,6 +6,7 @@ from logging import NullHandler
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
 
+
 class TextFormat(BaseModel):
     type: Literal["text", "json_object"] = "text"
 
@@ -16,10 +17,20 @@ TextFormatType = Union[
     list[Type[BaseModel]]
 ]
 
+
+class LocalModelConfig(BaseModel):
+    model_path: str
+    max_output_tokens: int = 8192
+    temperature: int = 1
+    workers: int = 4
+
+
 class ModelInfo(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     model_version: str = ""
+    content: Any = None
+
 
 class AdvancedOCRVL(BaseModel):
     location: list[float] = []

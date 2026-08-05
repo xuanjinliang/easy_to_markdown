@@ -9,7 +9,7 @@ from openai.lib._pydantic import to_strict_json_schema
 from pathlib import Path
 from llm_model import logger, ClientConfig, ModelAdapter, TextFormat
 from llm_model.interface import LLMInterface
-from typing import Any, Literal, Optional, get_origin, get_args
+from typing import Any, Literal, Optional
 from pkg.files_handle import get_file
 from pkg.image_handle import get_image_extension
 from pkg.result import Result

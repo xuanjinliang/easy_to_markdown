@@ -1,4 +1,6 @@
 import unittest
+import os
+import pkg
 from generate import ParsingResult
 from pkg.draw_label import generate_candidates, get_text_size
 from pkg.pdf_to_image import ImageResponse
@@ -8,7 +10,8 @@ class TestFontPosition(unittest.TestCase):
     def test_place_labels(self):
         image_response = ImageResponse(
             page_index=1,
-            image_path="/Users/xuanjinliang/PycharmProjects/pdf_local_model/pdf_temp/aws_2023_5fe9b746-79c3-4fc6-a996-b48ada7dcbeb/pdf_image/page_1.webp",
+            image_path=os.path.join(pkg.PdfTempDir,
+                                    "aws_2023_5fe9b746-79c3-4fc6-a996-b48ada7dcbeb/pdf_image/page_1.webp"),
             width=1191,
             height=1685
         )

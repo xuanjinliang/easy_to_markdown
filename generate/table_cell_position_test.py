@@ -1,4 +1,6 @@
 import unittest
+import os
+import pkg
 from generate.table_cell_position import clean_cell_detections
 
 
@@ -632,7 +634,8 @@ class TestTableCellLocation(unittest.TestCase):
 
     def test_clean_cell_detections(self):
         clusters = clean_cell_detections(
-            img_path="/Users/xuanjinliang/PycharmProjects/pdf_local_model/pdf_temp/aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_3/3_table.webp",
+            img_path=os.path.join(pkg.PdfTempDir,
+                                  "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_3/3_table.webp"),
             detections=self.detection_cell
         )
         print(clusters)
