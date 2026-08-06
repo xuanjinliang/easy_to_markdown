@@ -1,5 +1,3 @@
-from multiprocessing.pool import worker
-
 from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
 from mlx_vlm import load, generate
 from mlx_vlm.prompt_utils import apply_chat_template
@@ -113,7 +111,7 @@ class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
         model_path = os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-4B-Instruct")
         qwen_transformers_model = QwenTransformersModel(config=LocalModelConfig(
             model_path=model_path,
-            temperature=0,
+            temperature=0
         ))
 
         image_list = [

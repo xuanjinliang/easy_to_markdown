@@ -22,7 +22,7 @@ class LocalModelConfig(BaseModel):
     model_path: str
     max_output_tokens: int = 8192
     temperature: int = 1
-    workers: int = 4
+    workers: int = 1
 
 
 class ModelInfo(BaseModel):

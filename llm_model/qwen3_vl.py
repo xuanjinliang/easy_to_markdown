@@ -12,8 +12,14 @@ from mlx_vlm import load, generate
 from mlx_vlm.prompt_utils import apply_chat_template
 from typing import Any
 
+import logging
+from logging import NullHandler
 
-class QwenTransformersModel(LocalModelInterface):
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
+
+
+class QwenTransformersWorker:
     def __init__(self, config: LocalModelConfig):
         model_path = config.model_path
         if not os.path.exists(model_path):
@@ -24,11 +30,97 @@ class QwenTransformersModel(LocalModelInterface):
             dtype="auto",
             device_map="auto"
         )
+
+        self.processor = AutoProcessor.from_pretrained(
+            model_path
+        )
+
         self.model_path = model_path
         self.max_output_tokens = config.max_output_tokens
         self.temperature = config.temperature
-        self.executor = ThreadPoolExecutor(max_workers=config.workers)
-        self.infer_semaphore = asyncio.Semaphore(config.workers)
+
+    def inference(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
+        model = self.model
+        inputs = self.processor.apply_chat_template(messages,
+                                                    tokenize=True,
+                                                    add_generation_prompt=True,
+                                                    return_dict=True,
+                                                    return_tensors="pt",
+                                                    padding=True,
+                                                    truncation=True
+                                                    )
+
+        inputs = inputs.to(model.device)
+
+        generate_kwargs = {
+            "max_new_tokens": self.max_output_tokens
+        }
+
+        if self.temperature > 0:
+            generate_kwargs.update(
+                {
+                    "temperature": self.temperature,
+                    "do_sample": True
+                }
+            )
+
+        else:
+            generate_kwargs.update(
+                {
+                    "do_sample": False
+                }
+            )
+
+        generated_ids = model.generate(
+            **inputs,
+            **generate_kwargs
+        )
+        generated_ids_trimmed = [
+            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = self.processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+
+        input_token_counts = inputs.attention_mask.sum(dim=1).tolist()
+        output_token_counts = [len(out_ids) for out_ids in generated_ids_trimmed]
+        model_version = Path(self.model_path).name
+
+        results: list[Result] = []
+        for input_token, output_token, content in zip(input_token_counts, output_token_counts, output_text):
+            model_info = ModelInfo(
+                input_tokens=input_token,
+                output_tokens=output_token,
+                model_version=model_version,
+                content=content
+            )
+            result = Result(
+                success=True,
+                result=model_info
+            )
+            results.append(result)
+
+        return results
+
+
+class QwenTransformersModel(LocalModelInterface):
+    def __init__(self, config: LocalModelConfig):
+        self.workers = []
+        for i in range(config.workers):
+            worker = QwenTransformersWorker(
+                config=config,
+            )
+
+            self.workers.append(worker)
+
+        self.executor = ThreadPoolExecutor(
+            max_workers=1  # transformer doesn't support worker pools
+        )
+
+        self.worker_queue = asyncio.Queue()
+
+        for idx in range(len(self.workers)):
+            self.worker_queue.put_nowait(idx)
 
     def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
         content = []
@@ -56,73 +148,33 @@ class QwenTransformersModel(LocalModelInterface):
             }
         ]
 
-    def inference(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
-        model = self.model
-        processor = AutoProcessor.from_pretrained(
-            self.model_path
+    def _run_worker(self, worker_id: int, messages: list[list[dict[str, Any]]]) -> list[Result]:
+        worker = self.workers[worker_id]
+        return worker.inference(
+            messages
         )
-
-        inputs = processor.apply_chat_template(messages,
-                                               tokenize=True,
-                                               add_generation_prompt=True,
-                                               return_dict=True,
-                                               return_tensors="pt",
-                                               padding=True,
-                                               truncation=True
-                                               )
-
-        inputs = inputs.to(model.device)
-
-        do_sample = True
-        temperature = self.temperature
-        if temperature <= 0:
-            do_sample = False
-            temperature = 0.1
-
-        generated_ids = model.generate(
-            **inputs,
-            max_new_tokens=self.max_output_tokens,
-            temperature=temperature,
-            do_sample=do_sample
-        )
-        generated_ids_trimmed = [
-            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
-        ]
-        output_text = processor.batch_decode(
-            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
-        )
-
-        input_token_counts = inputs.attention_mask.sum(dim=1).tolist()
-        output_token_counts = [len(out_ids) for out_ids in generated_ids_trimmed]
-        model_version = Path(self.model_path).name
-
-        results: list[Result] = []
-        for input_token, output_token, content in zip(input_token_counts, output_token_counts, output_text):
-            model_info = ModelInfo(
-                input_tokens=input_token,
-                output_tokens=output_token,
-                model_version=model_version,
-                content=content
-            )
-            result = Result(
-                success=True,
-                result=model_info
-            )
-            results.append(result)
-
-        return results
 
     async def handle_item(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
-        loop = asyncio.get_running_loop()
+        worker_id = await self.worker_queue.get()
 
-        async with self.infer_semaphore:
-            results = await loop.run_in_executor(
+        try:
+            loop = asyncio.get_running_loop()
+
+            result = await loop.run_in_executor(
                 self.executor,
-                self.inference,
-                messages,
+                self._run_worker,
+                worker_id,
+                messages
             )
 
-        return results
+            return result
+        except Exception as e:
+            logger.error(e)
+            return [Result(success=False, result=e)] * len(messages)
+        finally:
+            self.worker_queue.put_nowait(
+                worker_id
+            )
 
     async def request_vllm(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
         if not messages:
@@ -138,45 +190,31 @@ class QwenTransformersModel(LocalModelInterface):
         return [x for r in list_data for x in r]
 
 
-class QwenMlxModel(LocalModelInterface):
+class QwenMlxWorker:
     def __init__(self, config: LocalModelConfig):
         model_path = config.model_path
-        if not os.path.exists(model_path):
+        if not os.path.exists(config.model_path):
             model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
 
         self.model_path = model_path
+        self.model, self.processor = load(model_path)
+        self.model_config = self.model.config
+
         self.max_output_tokens = config.max_output_tokens
         self.temperature = config.temperature
-        self.executor = ThreadPoolExecutor(max_workers=config.workers)
-        self.infer_semaphore = asyncio.Semaphore(config.workers)
-
-    def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
-        content = {}
-
-        if images is not None and len(images) > 0:
-            content["images"] = images
-
-        if prompt is not None and len(prompt) > 0:
-            content["prompt"] = prompt
-
-        return [content]
 
     def inference(self, messages: list[dict[str, Any]]) -> Result:
-
         message = messages[0]
         prompt = message.get("prompt", "")
         images = message.get("images", [])
 
-        model, processor = load(self.model_path)
-        config = model.config
-
         formatted_prompt = apply_chat_template(
-            processor, config, prompt, num_images=len(images)
+            self.processor, self.model_config, prompt, num_images=len(images)
         )
 
         output = generate(
-            model=model,
-            processor=processor,
+            model=self.model,
+            processor=self.processor,
             prompt=formatted_prompt,
             image=images,
             verbose=False,
@@ -199,26 +237,74 @@ class QwenMlxModel(LocalModelInterface):
 
         return result
 
-    async def handle_item(self, messages: list[dict[str, Any]]) -> Result:
-        loop = asyncio.get_running_loop()
 
-        async with self.infer_semaphore:
-            results = await loop.run_in_executor(
-                self.executor,
-                self.inference,
-                messages,
+class QwenMlxModel(LocalModelInterface):
+    def __init__(self, config: LocalModelConfig):
+        self.workers = []
+        for i in range(config.workers):
+            worker = QwenMlxWorker(
+                config=config,
             )
 
-        return results
+            self.workers.append(worker)
+
+        self.executor = ThreadPoolExecutor(
+            max_workers=config.workers
+        )
+
+        self.worker_queue = asyncio.Queue()
+
+        for idx in range(len(self.workers)):
+            self.worker_queue.put_nowait(idx)
+
+    def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
+        content = {}
+
+        if images is not None and len(images) > 0:
+            content["images"] = images
+
+        if prompt is not None and len(prompt) > 0:
+            content["prompt"] = prompt
+
+        return [content]
+
+    def _run_worker(self, worker_id: int, messages: list[dict[str, Any]]) -> Result:
+        worker = self.workers[worker_id]
+        return worker.inference(
+            messages
+        )
+
+    async def handle_item(self, messages: list[dict[str, Any]]) -> Result:
+        worker_id = await self.worker_queue.get()
+
+        try:
+            loop = asyncio.get_running_loop()
+
+            result = await loop.run_in_executor(
+                self.executor,
+                self._run_worker,
+                worker_id,
+                messages
+            )
+
+            return result
+        except Exception as e:
+            logger.error(e)
+            return Result(success=False, result=e)
+        finally:
+            self.worker_queue.put_nowait(
+                worker_id
+            )
 
     async def request_vllm(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
         if not messages:
             return []
 
-        tasks = []
-
-        for message in messages:
-            task = asyncio.create_task(self.handle_item(message))
-            tasks.append(task)
+        tasks = [
+            asyncio.create_task(
+                self.handle_item(msg)
+            )
+            for msg in messages
+        ]
 
         return await asyncio.gather(*tasks)
