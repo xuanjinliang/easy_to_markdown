@@ -1,5 +1,9 @@
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 from pydantic import BaseModel, Field
-from typing import Optional, Literal, Any
+from typing import Any
+
+T = TypeVar("T")
 
 
 class OCRContent(BaseModel):
@@ -11,3 +15,17 @@ class OCRContent(BaseModel):
     content: list[str] = []
     scores: list[float] = []
     bbox: list[list[float]] = []
+
+
+class OcrInterface(ABC, Generic[T]):
+    @abstractmethod
+    def __init__(self, x: T):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def process_item(result: T) -> OCRContent:
+        pass
+
+    def advanced_recognition(self, image_list: list[str]) -> list[OCRContent]:
+        pass

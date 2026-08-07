@@ -2,13 +2,14 @@ import os
 import pkg
 import numpy as np
 from pkg.common import ensure_dir
-from paddleocr import PaddleOCR
+from paddleocr import PaddleOCR, PaddleOCRVL
 from typing import Literal
-from mode_interface.ocr import OCRContent
+from mode_interface.ocr import OCRContent, OcrInterface
 from paddlex.inference.pipelines.ocr.result import OCRResult
+from paddlex.inference.pipelines.paddleocr_vl.result import PaddleOCRVLResult
 
 
-class PPOcr:
+class PPOcr(OcrInterface):
     def __init__(self, device: Literal["cpu", "cuda:0"] = "cpu"):
         model_path = os.path.join(pkg.ModelDir, "paddle")
         ensure_dir(model_path)
@@ -60,6 +61,59 @@ class PPOcr:
             return []
 
         results = self.model.predict(image_list)
+
+        parsing_info_list = [
+            self.process_item(result=result)
+            for result in results
+        ]
+
+        return parsing_info_list
+
+
+class PPOcrVl(OcrInterface):
+    def __init__(self, device: Literal["cpu", "cuda:0"] = "cpu"):
+        model_path = os.path.join(pkg.ModelDir, "paddle")
+        ensure_dir(model_path)
+
+        enable_hpi = None
+        if device == "cuda:0":
+            device = "gpu:0"
+            enable_hpi = True
+
+        self.pipeline = PaddleOCRVL(
+            vl_rec_model_name="PaddleOCR-VL-1.6-0.9B",
+            vl_rec_model_dir=os.path.join(model_path, "PaddleOCR-VL-1.6"),
+            use_layout_detection=False,
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            merge_layout_blocks=False,
+            device=device,
+            enable_hpi=enable_hpi,
+        )
+
+    @staticmethod
+    def process_item(result: PaddleOCRVLResult) -> OCRContent:
+        input_path = result.get("input_path", "")
+        model_settings = result.get("model_settings", {})
+        parsing_res_list = result.get("parsing_res_list", [])
+        content: list[str] = []
+        bbox: list[list[float]] = []
+        for item in parsing_res_list:
+            content.append(item.content)
+            bbox.append(item.bbox)
+
+        return OCRContent(
+            input_path=input_path,
+            model_settings=model_settings,
+            content=content,
+            bbox=bbox,
+        )
+
+    def advanced_recognition(self, image_list: list[str]) -> list[OCRContent]:
+        if not image_list:
+            return []
+
+        results = self.pipeline.predict(image_list)
 
         parsing_info_list = [
             self.process_item(result=result)
