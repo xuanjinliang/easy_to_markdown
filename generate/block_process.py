@@ -69,11 +69,16 @@ def filter_overlap_by_area(
             continue
 
         if mode == "max":
+            bbox, bbox_norm = get_max_bbox(blocks=[keep_block, block])
+
             if are1 > are2:
                 block.remove = True
             else:
                 keep_block.remove = True
                 keep_block = block
+
+            keep_block.block_bbox = bbox
+            keep_block.block_bbox_norm = bbox_norm
         else:
             if are1 < are2:
                 block.remove = True
@@ -99,3 +104,14 @@ def remove_repeat_blocks(
         )
 
     return blocks
+
+
+def get_max_bbox(blocks: list[ParsingResult]) -> tuple[list[float], list[float]]:
+    x1, y1, x2, y2 = blocks[0].block_bbox
+    x_1, y_1, x_2, y_2 = blocks[1].block_bbox
+
+    x1_norm, y1_norm, x2_norm, y2_norm = blocks[0].block_bbox_norm
+    x_1_norm, y_1_norm, x_2_norm, y_2_norm = blocks[1].block_bbox_norm
+
+    return ([min(x1, x_1), min(y1, y_1), max(x2, x_2), max(y2, y_2)],
+            [min(x1_norm, x_1_norm), min(y1_norm, y_1), max(x2_norm, x_2_norm), max(y2_norm, y_2_norm)])
