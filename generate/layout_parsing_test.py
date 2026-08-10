@@ -56,7 +56,7 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             f.write(json_str)
 
     async def test_layout_parsing_1(self):
-        output_dir = os.path.join(pkg.PdfTempDir, "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159")
+        output_dir = os.path.join(pkg.PdfTempDir, "demo2_b51e404f-f544-48f0-8597-6a3978ebcfc6")
 
         webp_files = sorted(
             Path(os.path.join(output_dir, "pdf_image")).glob("page_*.webp"),
@@ -69,8 +69,10 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
                 ImageResponse(
                     page_index=i,
                     image_path=str(item),
-                    width=1654,
-                    height=2340
+                    width=1700,
+                    height=2200
+                    # width=1654,
+                    # height=2340
                 )
             )
 

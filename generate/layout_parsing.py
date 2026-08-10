@@ -63,7 +63,7 @@ class LayoutParsing:
         )
 
         # ocr
-        self.ocr_model = pp_ocr.PPOcr(device=parsing_info.device)
+        self.ocr_model = pp_ocr.PPOcrVl(device=parsing_info.device)
 
         # table
         self.table_classification = PPTableClassification()
