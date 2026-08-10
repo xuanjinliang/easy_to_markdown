@@ -1,7 +1,7 @@
 import asyncio
 import os
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Any
 from pkg.pdf_to_image import ImageResponse
 from concurrent.futures import ThreadPoolExecutor
 from mode_interface.layout.pp_doclayout import PPDocLayout
@@ -234,8 +234,11 @@ class LayoutParsing:
 
         padding = self.parsing_info.padding
         image_path = Path(image_info.image_path)
-        output_dir = os.path.join(output_dir, "crops_img", image_path.stem)
-        ensure_dir(output_dir)
+        ocr_output_dir = os.path.join(output_dir, "crops_img", image_path.stem)
+        ensure_dir(ocr_output_dir)
+
+        llm_output_dir = os.path.join(output_dir, "llm_crops_img", image_path.stem)
+        ensure_dir(llm_output_dir)
 
         img = Image.open(image_path).convert("RGB")
         width, height = img.size
@@ -245,25 +248,30 @@ class LayoutParsing:
                 continue
             x1, y1, x2, y2 = block.block_bbox
 
-            crop_x1 = max(0, int(x1) - padding)
-            crop_y1 = max(0, int(y1) - padding)
-            crop_x2 = min(width, int(x2) + padding)
-            crop_y2 = min(height, int(y2) + padding)
+            for p, output_path in [(padding, ocr_output_dir), (50, llm_output_dir)]:
+                crop_x1 = max(0, int(x1) - p)
+                crop_y1 = max(0, int(y1) - p)
+                crop_x2 = min(width, int(x2) + p)
+                crop_y2 = min(height, int(y2) + p)
 
-            if crop_x2 <= crop_x1 or crop_y2 <= crop_y1:
-                block.crop_path = None
-                block.crop_bbox = None
-                continue
+                if crop_x2 <= crop_x1 or crop_y2 <= crop_y1:
+                    block.crop_path = None
+                    block.crop_bbox = None
+                    continue
 
-            crop_img = img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
+                crop_img = img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
 
-            crop_name = f'{block.block_id}_{block.block_label}.webp'
-            crop_path = os.path.join(output_dir, crop_name)
+                crop_name = f'{block.block_id}_{block.block_label}.webp'
+                crop_path = os.path.join(output_path, crop_name)
 
-            crop_img.save(crop_path)
+                crop_img.save(crop_path)
 
-            block.crop_path = crop_path
-            block.crop_bbox = [crop_x1, crop_y1, crop_x2, crop_y2]
+                if output_path == llm_output_dir:
+                    block.llm_crop_path = crop_path
+                    block.llM_crop_bbox = [crop_x1, crop_y1, crop_x2, crop_y2]
+                else:
+                    block.crop_path = crop_path
+                    block.crop_bbox = [crop_x1, crop_y1, crop_x2, crop_y2]
 
         return blocks
 

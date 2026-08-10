@@ -19,6 +19,12 @@ class ParsingResult(LayoutResult):
         min_length=4,
         max_length=4
     )
+    llm_crop_path: Optional[str] = Field(default=None)
+    llM_crop_bbox: Optional[list[float]] = Field(
+        default=None,
+        min_length=4,
+        max_length=4
+    )
     ocr_content: OCRContent | None = None
     table_model: list[str] = []
     table_info: Optional[TableInfo] = None
