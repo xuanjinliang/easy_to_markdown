@@ -3,6 +3,7 @@ from typing import Any, Optional, Generic, TypeVar
 from llm_model import ClientConfig
 from pkg.result import Result
 import uuid
+from llm_model import LocalModelConfig
 
 T = TypeVar("T")
 
@@ -43,6 +44,10 @@ class LLMInterface(ABC, Generic[T]):
 
 
 class LocalModelInterface(ABC, Generic[T]):
+    @abstractmethod
+    def __init__(self, config: LocalModelConfig):
+        pass
+
     @abstractmethod
     def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
         pass

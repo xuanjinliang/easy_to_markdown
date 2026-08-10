@@ -4,12 +4,13 @@ from typing import Optional, Literal
 from pkg.pdf_to_image import ImageResponse
 from mode_interface.ocr import OCRContent
 from mode_interface.layout import LayoutResult
+from mode_interface.llm import LLMContent
 
 
 class ParsingResult(LayoutResult):
     block_label_type: str = ""
     level: int = 0
-    block_content: str = Field(default="")
+    block_content: LLMContent | None = None
     remove: bool = False
     remove_reason: str = ""
     crop_path: Optional[str] = Field(default=None)
