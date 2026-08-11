@@ -1,13 +1,13 @@
 import os
 import pkg
-from typing import Literal
+from typing import Literal, Any
 from llm_model import LocalModelConfig, ModelInfo
 from llm_model.qwen3_vl import QwenTransformersModel, QwenMlxModel
-from mode_interface.llm import LLMContent
 
 
 class LocalLLM:
     def __init__(self,
+                 system_info: str,
                  temperature: int = 1,
                  max_output_tokens=8192,
                  device: Literal["transformers", "mlx"] = "transformers"):
@@ -26,16 +26,23 @@ class LocalLLM:
                 max_output_tokens=max_output_tokens
             ))
 
-    async def predict(self, prompt: str, image_list: list[str]) -> list[LLMContent]:
+        if len(system_info) > 0:
+            self.system_info = system_info
 
-        input_list = []
+    def set_message(self, prompt: str, image_list: list[str]) -> list[dict[str, Any]]:
+        input_prompt = []
+        if len(self.system_info) > 0:
+            input_prompt = self.llm_model.generate_message(content=self.system_info, role="system")
+
         for image in image_list:
-            input_prompt = self.llm_model.preprocess_image(prompt=prompt, images=[image])
-            input_list.append(input_prompt)
+            input_prompt += self.llm_model.preprocess_image(prompt=prompt, images=[image])
 
-        results = await self.llm_model.request_vllm(messages=input_list)
+        return input_prompt
+
+    async def predict(self, messages: list[list[dict[str, Any]]]) -> list[ModelInfo]:
+        results = await self.llm_model.request_vllm(messages=messages)
 
         return [
-            LLMContent(input_path=image_path, content=ModelInfo(**item.result))
-            for image_path, item in zip(input_list, results)
+            item.result
+            for item in results
         ]

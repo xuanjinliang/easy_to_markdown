@@ -18,9 +18,37 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
 
         file_parsing_result_list = [FileParsingResult.model_validate(item) for item in data]
 
+        file_parsing_result_list = file_parsing_result_list[:1]
 
-        local_llm = LocalLLM(temperature=0, device="mlx")
+        local_llm = LocalLLM(system_info=system_info, temperature=0, device="mlx")
 
+        messages = []
+        for file_parsing in file_parsing_result_list:
+            for block in file_parsing.blocks:
+                if block.remove:
+                    continue
 
+                llm_crop_path = block.llm_crop_path
+                if llm_crop_path is None:
+                    continue
 
-        await local_llm.predict()
+                ocr_content = block.ocr_content
+                if ocr_content is None:
+                    continue
+
+                content = ocr_content.content
+                bbox = ocr_content.bbox
+
+                data = {
+                    "content": content,
+                    "bbox": bbox
+                }
+                ocr_txt = str(data)
+
+                prompt = f"[Ocr Content]\n{ocr_txt}\n"
+
+                message = local_llm.set_message(prompt=prompt, image_list=[llm_crop_path])
+                messages.append(message)
+
+        results = await local_llm.predict(messages=messages)
+        print(results)

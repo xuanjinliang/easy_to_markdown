@@ -30,6 +30,26 @@ def layout_labels(
             block_bbox=block.block_bbox
         ))
 
+    return draw_labels_info(
+        image_info=image_info,
+        bbox_label_list=bbox_label_list,
+        font_scale=font_scale,
+        font_space=font_space,
+        border_line=border_line,
+        border_space=border_space,
+        font_pos_step=font_pos_step,
+        thickness=thickness
+    )
+
+
+def draw_labels_info(image_info: ImageResponse,
+                     bbox_label_list: list[BboxLabel],
+                     font_scale: float = 1,
+                     font_space: int = 4,
+                     border_line: int = 5,
+                     border_space: int = 4,
+                     font_pos_step: int = 10,
+                     thickness: int = 2) -> cv2.typing.MatLike | None:
     draw_info = DrawImageLabel(
         img_path=image_info.image_path,
         img_width=image_info.width,

@@ -1,8 +1,10 @@
 import asyncio
 import os
+import numpy as np
 from pydantic import BaseModel, Field
 from typing import Literal, Any
 from pkg.pdf_to_image import ImageResponse
+from pkg.draw_label import BboxLabel
 from concurrent.futures import ThreadPoolExecutor
 from mode_interface.layout.pp_doclayout import PPDocLayout
 from generate import (FileParsingResult, ParsingResult, TableInfo,
@@ -12,7 +14,7 @@ from pkg.common import ensure_dir, chunk_list
 from PIL import Image
 from pathlib import Path
 import cv2
-from generate.font_position import layout_labels
+from generate.font_position import layout_labels, draw_labels_info
 from typing import Optional
 from mode_interface.table import TablePosition
 from generate.table_cell_position import clean_cell_detections, table_cell_category
@@ -248,7 +250,28 @@ class LayoutParsing:
                 continue
             x1, y1, x2, y2 = block.block_bbox
 
+            copy_img = img
             for p, output_path in [(padding, ocr_output_dir), (50, llm_output_dir)]:
+                if output_path == llm_output_dir:
+                    draw_img = draw_labels_info(
+                        image_info=image_info,
+                        bbox_label_list=[BboxLabel(block_label="content", block_bbox=block.block_bbox)],
+                        font_scale=self.parsing_info.font_scale,
+                        font_space=self.parsing_info.font_space,
+                        border_space=self.parsing_info.border_space,
+                        border_line=self.parsing_info.border_line,
+                        font_pos_step=self.parsing_info.font_pos_step,
+                        thickness=self.parsing_info.thickness
+                    )
+
+                    if draw_img is not None:
+                        img_rgb = cv2.cvtColor(
+                            draw_img,
+                            cv2.COLOR_BGR2RGB
+                        )
+
+                        copy_img = Image.fromarray(np.asarray(img_rgb))
+
                 crop_x1 = max(0, int(x1) - p)
                 crop_y1 = max(0, int(y1) - p)
                 crop_x2 = min(width, int(x2) + p)
@@ -259,7 +282,7 @@ class LayoutParsing:
                     block.crop_bbox = None
                     continue
 
-                crop_img = img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
+                crop_img = copy_img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
 
                 crop_name = f'{block.block_id}_{block.block_label}.webp'
                 crop_path = os.path.join(output_path, crop_name)

@@ -50,7 +50,7 @@ class LocalModelInterface(ABC, Generic[T]):
 
     @staticmethod
     @abstractmethod
-    def generate_message(content: list[dict[str, Any]], role: str = "user") -> list[dict[str, Any]]:
+    def generate_message(content: list[dict[str, Any]] | str, role: str = "user") -> list[dict[str, Any]]:
         pass
 
     @abstractmethod
