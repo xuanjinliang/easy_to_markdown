@@ -140,10 +140,10 @@ class QwenTransformersModel(LocalModelInterface):
         return self.generate_message(content=content)
 
     @staticmethod
-    def generate_message(content: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def generate_message(content: list[dict[str, Any]], role: str = "user") -> list[dict[str, Any]]:
         return [
             {
-                "role": "user",
+                "role": role,
                 "content": content
             }
         ]
@@ -286,7 +286,7 @@ class QwenMlxModel(LocalModelInterface):
         return self.generate_message(content=content)
 
     @staticmethod
-    def generate_message(content: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def generate_message(content: list[dict[str, Any]], role: str = "user") -> list[dict[str, Any]]:
         return [
             {
                 "role": "user",
