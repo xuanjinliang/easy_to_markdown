@@ -89,7 +89,7 @@ def filter_overlap_by_area(
 
 def remove_repeat_blocks(
         blocks: list[ParsingResult],
-        threshold=0.6,
+        threshold=0.5,
         mode: Literal["max", "min"] = "max"
 ) -> list[ParsingResult]:
     block_bbox_list = [parsing_result.block_bbox for parsing_result in blocks]

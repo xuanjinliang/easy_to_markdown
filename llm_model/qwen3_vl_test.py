@@ -88,10 +88,26 @@ class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
             os.path.join(pkg.PdfTempDir,
                          "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/2_doc_title.webp")
         ]
-        prompt = "Describe this image."
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "image": os.path.join(pkg.PdfTempDir,
+                                              "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/2_doc_title.webp")
+                    },
+                    {
+                        "type": "text",
+                        "text": "Describe this image."
+                    }
+                ]
+            }
+        ]
 
         formatted_prompt = apply_chat_template(
-            processor, config, prompt, num_images=len(images)
+            processor, config, messages, num_images=len(images)
         )
 
         output = generate(
@@ -145,7 +161,8 @@ class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
 
         input_list = []
         for image in image_list:
-            input_prompt = qwen_mlx_model.preprocess_image(prompt="Describe this image.", images=[image])
+            input_prompt = qwen_mlx_model.preprocess_image(prompt="Describe this image.",
+                                                           images=[image])
             input_list.append(input_prompt)
 
         results = await qwen_mlx_model.request_vllm(messages=input_list)

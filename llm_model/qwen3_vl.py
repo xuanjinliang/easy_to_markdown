@@ -204,19 +204,31 @@ class QwenMlxWorker:
         self.temperature = config.temperature
 
     def inference(self, messages: list[dict[str, Any]]) -> Result:
-        message = messages[0]
-        prompt = message.get("prompt", "")
-        images = message.get("images", [])
+        image_list: list[str] = []
+        for message in messages:
+            content = message.get("content", None)
+            if not isinstance(content, list):
+                continue
+
+            for item in content:
+                if item.get("type", "") == "image" and len(item.get("image", "")) > 0:
+                    image = item.get("image", None)
+                    if isinstance(image, str):
+                        image_list.append(image)
+                        continue
+
+                    elif isinstance(image, list):
+                        image_list += image
 
         formatted_prompt = apply_chat_template(
-            self.processor, self.model_config, prompt, num_images=len(images)
+            self.processor, self.model_config, messages, num_images=len(image_list)
         )
 
         output = generate(
             model=self.model,
             processor=self.processor,
             prompt=formatted_prompt,
-            image=images,
+            image=image_list,
             verbose=False,
             temperature=self.temperature,
             max_tokens=self.max_output_tokens,
@@ -258,15 +270,29 @@ class QwenMlxModel(LocalModelInterface):
             self.worker_queue.put_nowait(idx)
 
     def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
-        content = {}
+        content = []
 
         if images is not None and len(images) > 0:
-            content["images"] = images
+            content.append(
+                {
+                    "type": "image",
+                    "image": images,
+                }
+            )
 
         if prompt is not None and len(prompt) > 0:
-            content["prompt"] = prompt
+            content.append({"type": "text", "text": prompt})
 
-        return [content]
+        return self.generate_message(content=content)
+
+    @staticmethod
+    def generate_message(content: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [
+            {
+                "role": "user",
+                "content": content
+            }
+        ]
 
     def _run_worker(self, worker_id: int, messages: list[dict[str, Any]]) -> Result:
         worker = self.workers[worker_id]
