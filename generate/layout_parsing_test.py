@@ -4,6 +4,7 @@ import pkg
 import json
 import re
 from pkg.pdf_to_image import ImageResponse
+from generate import LLMConfig
 from generate.layout_parsing import ParsingInfo, LayoutParsing
 from pathlib import Path
 
@@ -41,7 +42,10 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         parsing_info = ParsingInfo(
             image_list=image_list,
             font_scale=0.6,
-            thickness=2
+            thickness=2,
+            llm_conf=LLMConfig(
+                device="mlx"
+            )
         )
         layout = LayoutParsing(parsing_info=parsing_info)
         results = await layout.run(image_list=image_list, output_dir=output_dir)
@@ -62,7 +66,8 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             Path(os.path.join(output_dir, "pdf_image")).glob("page_*.webp"),
             key=lambda p: int(re.search(r'\d+', p.stem).group()))
 
-        webp_files = webp_files[:2]
+        # webp_files = webp_files[:2]
+        webp_files = [webp_files[1]]
         image_list = []
         for i, item in enumerate(webp_files):
             image_list.append(
@@ -75,7 +80,10 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             )
 
         parsing_info = ParsingInfo(
-            image_list=image_list
+            image_list=image_list,
+            llm_conf=LLMConfig(
+                device="mlx"
+            )
         )
         layout = LayoutParsing(parsing_info=parsing_info)
         results = await layout.run(image_list=image_list, output_dir=output_dir)

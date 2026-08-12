@@ -21,7 +21,7 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
 
         file_parsing_result_list = file_parsing_result_list[:1]
 
-        local_llm = LocalLLM(system_info=system_info, temperature=0, device="transformers")
+        local_llm = LocalLLM(system_info=system_info, temperature=0, device="mlx")
 
         messages = []
         for file_parsing in file_parsing_result_list:

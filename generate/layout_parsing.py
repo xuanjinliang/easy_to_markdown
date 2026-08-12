@@ -1,14 +1,15 @@
 import asyncio
 import os
 import numpy as np
+import pkg
 from pydantic import BaseModel, Field
-from typing import Literal, Any
+from typing import Literal
 from pkg.pdf_to_image import ImageResponse
 from pkg.draw_label import BboxLabel
 from concurrent.futures import ThreadPoolExecutor
 from mode_interface.layout.pp_doclayout import PPDocLayout
 from generate import (FileParsingResult, ParsingResult, TableInfo,
-                      TableCellCategory, ColumnsInfo)
+                      TableCellCategory, ColumnsInfo, LLMConfig)
 from generate.block_process import set_block_process, remove_repeat_blocks
 from pkg.common import ensure_dir, chunk_list
 from PIL import Image
@@ -20,6 +21,7 @@ from mode_interface.table import TablePosition
 from generate.table_cell_position import clean_cell_detections, table_cell_category
 from mode_interface.table.pp_table_classification import PPTableClassification
 from mode_interface.ocr import pp_ocr, OCRContent
+from llm.local_llm import LocalLLM
 import logging
 from logging import NullHandler
 
@@ -30,6 +32,7 @@ logger.addHandler(NullHandler())
 class ParsingInfo(BaseModel):
     image_list: list[ImageResponse]
     device: Literal["cpu", "cuda:0"] = "cpu"
+    llm_conf: LLMConfig
     conf: float = Field(default=0.25, gt=0, le=1)
     table_conf: float = Field(default=0.1, gt=0, le=1)
     padding: int = 12
@@ -69,6 +72,113 @@ class LayoutParsing:
 
         # table
         self.table_classification = PPTableClassification()
+
+        # llm_config
+        self.llm_config = parsing_info.llm_conf
+
+    def get_llm_model(self, system_info_type: int = 1) -> LocalLLM:
+
+        prompt_path = ""
+        match system_info_type:
+            case 1:
+                prompt_path = os.path.join(pkg.PromptDir, "doc_understanding_assistant.md")
+            case 2:
+                prompt_path = os.path.join(pkg.PromptDir, "natural_reading_assistant.md")
+
+        system_info = Path(prompt_path).read_text(encoding="utf-8")
+
+        local_llm = LocalLLM(
+            system_info=system_info,
+            temperature=self.llm_config.temperature,
+            max_output_tokens=self.llm_config.max_output_tokens,
+            device=self.llm_config.device)
+
+        return local_llm
+
+    @staticmethod
+    def set_ocr_content_prompt(ocr_content: OCRContent | None) -> str | None:
+        if ocr_content is None:
+            return None
+
+        content = ocr_content.content
+        bbox = ocr_content.bbox
+
+        if (not isinstance(content, list) or
+                not isinstance(bbox, list) or
+                len(content) <= 0 or len(bbox) <= 0):
+            return None
+
+        return f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
+
+    async def set_table_content(self, table_info: TableInfo) -> TableInfo:
+        llm_model = self.get_llm_model(system_info_type=2)
+
+        messages = []
+        columns_index: list[tuple[int, int]] = []
+        for i, row_info in enumerate(table_info.table_list):
+            for j, columns_info in enumerate(row_info.rows_list):
+                if columns_info.columns_blocks is not None:
+                    results = await self.set_block_content(file_parsing_data=[columns_info.columns_blocks])
+                    if len(results) > 0:
+                        columns_info.columns_blocks = results[0]
+                    continue
+
+                image_path = columns_info.image_path
+                if not image_path:
+                    continue
+
+                prompt = self.set_ocr_content_prompt(columns_info.ocr_content)
+                if prompt is None:
+                    continue
+
+                message = llm_model.set_message(prompt=prompt, image_list=[image_path])
+                messages.append(message)
+                columns_index.append((i, j))
+
+        if len(messages) <= 0:
+            return table_info
+
+        results = await llm_model.predict(messages=messages)
+        for (i, j), result in zip(columns_index, results):
+            row_info = table_info.table_list
+            row_info[i].rows_list[j].block_content = result
+
+        return table_info
+
+    async def set_block_content(self, file_parsing_data: list[FileParsingResult]) -> list[FileParsingResult]:
+        llm_model = self.get_llm_model(system_info_type=1)
+
+        for file_parsing in file_parsing_data:
+            messages = []
+            block_index: list[int] = []
+            for i, block in enumerate(file_parsing.blocks):
+                if block.remove:
+                    continue
+
+                if block.table_info is not None:
+                    block.table_info = await self.set_table_content(table_info=block.table_info)
+                    continue
+
+                llm_crop_path = block.llm_crop_path
+                if llm_crop_path is None:
+                    continue
+
+                prompt = self.set_ocr_content_prompt(block.ocr_content)
+                if prompt is None:
+                    continue
+
+                message = llm_model.set_message(prompt=prompt, image_list=[llm_crop_path])
+                messages.append(message)
+                block_index.append(i)
+
+            if len(messages) <= 0:
+                continue
+
+            results = await llm_model.predict(messages=messages)
+            for index, result in zip(block_index, results):
+                file_parsing.blocks[index].block_content = result
+
+        return file_parsing_data
 
     def cell_inference(self,
                        image_list: list[ImageResponse],
@@ -514,5 +624,7 @@ class LayoutParsing:
             await self.ocr_handel_file_parsing(file_parsing_result)
             for file_parsing_result in file_parsing_data
         ]
+
+        file_parsing_data = await self.set_block_content(file_parsing_data=file_parsing_data)
 
         return file_parsing_data

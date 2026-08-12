@@ -4,13 +4,13 @@ from typing import Optional, Literal
 from pkg.pdf_to_image import ImageResponse
 from mode_interface.ocr import OCRContent
 from mode_interface.layout import LayoutResult
-from mode_interface.llm import LLMContent
+from llm_model import ModelInfo
 
 
 class ParsingResult(LayoutResult):
     block_label_type: str = ""
     level: int = 0
-    block_content: LLMContent | None = None
+    block_content: ModelInfo | None = None
     remove: bool = False
     remove_reason: str = ""
     crop_path: Optional[str] = Field(default=None)
@@ -53,6 +53,7 @@ class ColumnsInfo(ContainerInfo):
     image_path: str
     columns_list: list[CellInfo]
     category_type: Literal["formula", "text", "unknown"] = "text"
+    block_content: ModelInfo | None = None
     ocr_content: OCRContent | None = None
     columns_blocks: FileParsingResult | None = None
 
@@ -77,3 +78,9 @@ class FileParsingResult(BaseModel):
 class TableCellCategory(BaseModel):
     category_type: Literal["formula", "text", "unknown"]
     parsing_result: FileParsingResult | None = None
+
+
+class LLMConfig(BaseModel):
+    temperature: int = 0
+    max_output_tokens: int = 8192 * 2
+    device: Literal["transformers", "mlx"] = "transformers"
