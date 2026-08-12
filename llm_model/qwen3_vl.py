@@ -148,13 +148,13 @@ class QwenTransformersModel(LocalModelInterface):
             }
         ]
 
-    def _run_worker(self, worker_id: int, messages: list[list[dict[str, Any]]]) -> list[Result]:
+    def _run_worker(self, worker_id: int, messages: list[dict[str, Any]]) -> list[Result]:
         worker = self.workers[worker_id]
         return worker.inference(
-            messages
+            [messages]
         )
 
-    async def handle_item(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
+    async def handle_item(self, messages: list[dict[str, Any]]) -> list[Result]:
         worker_id = await self.worker_queue.get()
 
         try:
@@ -180,11 +180,12 @@ class QwenTransformersModel(LocalModelInterface):
         if not messages:
             return []
 
-        tasks = []
-
-        for batch in chunk_list(messages):
-            task = asyncio.create_task(self.handle_item(batch))
-            tasks.append(task)
+        tasks = [
+            asyncio.create_task(
+                self.handle_item(msg)
+            )
+            for msg in messages
+        ]
 
         list_data = await asyncio.gather(*tasks)
         return [x for r in list_data for x in r]

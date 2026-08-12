@@ -255,7 +255,7 @@ class LayoutParsing:
                 if output_path == llm_output_dir:
                     draw_img = draw_labels_info(
                         image_info=image_info,
-                        bbox_label_list=[BboxLabel(block_label="content", block_bbox=block.block_bbox)],
+                        bbox_label_list=[BboxLabel(block_label="__content__", block_bbox=block.block_bbox)],
                         font_scale=self.parsing_info.font_scale,
                         font_space=self.parsing_info.font_space,
                         border_space=self.parsing_info.border_space,

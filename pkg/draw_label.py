@@ -152,6 +152,7 @@ def draw_labels(draw_info: DrawImageLabel) -> cv2.typing.MatLike | None:
         (255, 128, 0),  # 天蓝 RGB(0,128,255)
         (255, 20, 147)  # 深粉红 RGB(147,20,255)
     ]
+
     len_colors = len(colors)
 
     occupied = []
@@ -165,6 +166,7 @@ def draw_labels(draw_info: DrawImageLabel) -> cv2.typing.MatLike | None:
         text = block.block_label
         base_color = colors[i % len_colors]
 
+        # print(f"base_color: {base_color}, index: {i}, text: {text}")
         cv2.rectangle(
             img,
             (x1, y1),

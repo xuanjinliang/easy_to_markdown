@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from generate import FileParsingResult
 from llm.local_llm import LocalLLM
+from ocr import OCRContent
 
 
 class TestPPOcr(unittest.IsolatedAsyncioTestCase):
@@ -20,7 +21,7 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
 
         file_parsing_result_list = file_parsing_result_list[:1]
 
-        local_llm = LocalLLM(system_info=system_info, temperature=0, device="mlx")
+        local_llm = LocalLLM(system_info=system_info, temperature=0, device="transformers")
 
         messages = []
         for file_parsing in file_parsing_result_list:
@@ -39,13 +40,12 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
                 content = ocr_content.content
                 bbox = ocr_content.bbox
 
-                data = {
-                    "content": content,
-                    "bbox": bbox
-                }
-                ocr_txt = str(data)
+                if (not isinstance(content, list) or
+                        not isinstance(bbox, list) or
+                        len(content) <= 0 or len(bbox) <= 0):
+                    continue
 
-                prompt = f"[Ocr Content]\n{ocr_txt}\n"
+                prompt = f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
 
                 message = local_llm.set_message(prompt=prompt, image_list=[llm_crop_path])
                 messages.append(message)
