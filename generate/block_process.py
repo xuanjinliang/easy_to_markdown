@@ -61,7 +61,7 @@ def filter_overlap_by_area(
 
     keep_block = blocks[0]
     for block in blocks[1:]:
-        if block.block_label_type != keep_block.block_label_type:
+        if block.block_label_type == "image" or keep_block.block_label_type == "image":
             continue
 
         ratio, are1, are2 = calc_overlap_ratio(keep_block, block)

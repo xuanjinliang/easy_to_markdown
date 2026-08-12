@@ -52,6 +52,7 @@ class LayoutParsing:
 
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.infer_semaphore = asyncio.Semaphore(max_workers)
+        # self.pipeline_lock = asyncio.Lock()
         self.parsing_info = parsing_info
 
         # layout
@@ -304,10 +305,11 @@ class LayoutParsing:
                 unknown_category_list.append(file_parsing_result)
                 unknown_row_and_col_pos.append(index)
 
-        children_file_parsing = await self.table_handle(file_parsing_result=unknown_category_list)
-        for index, item in enumerate(children_file_parsing):
-            i, j = row_and_col_pos[unknown_row_and_col_pos[index]]
-            table_info.table_list[i].rows_list[j].columns_blocks = item
+        if len(unknown_category_list) > 0:
+            children_file_parsing = await self.table_handle(file_parsing_result=unknown_category_list)
+            for index, item in enumerate(children_file_parsing):
+                i, j = row_and_col_pos[unknown_row_and_col_pos[index]]
+                table_info.table_list[i].rows_list[j].columns_blocks = item
 
         return table_pos, table_info
 
@@ -577,6 +579,9 @@ class LayoutParsing:
                 continue
 
             text_blocks_index.append((index, crop_img_path))
+
+        if len(text_blocks_index) == 0:
+            return blocks
 
         loop = asyncio.get_running_loop()
 

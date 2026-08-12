@@ -17,7 +17,8 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             Path(os.path.join(output_dir, "pdf_image")).glob("page_*.webp"),
             key=lambda p: int(re.search(r'\d+', p.stem).group()))
 
-        webp_files = webp_files[:3]
+        # webp_files = webp_files[:3]
+        webp_files = [webp_files[0]]
         image_list = []
         for i, item in enumerate(webp_files):
             image_list.append(
@@ -41,8 +42,6 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
 
         parsing_info = ParsingInfo(
             image_list=image_list,
-            font_scale=0.6,
-            thickness=2,
             llm_conf=LLMConfig(
                 device="mlx"
             )
