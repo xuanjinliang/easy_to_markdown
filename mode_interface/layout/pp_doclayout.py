@@ -11,7 +11,7 @@ class PPDocLayout(LayoutModel):
     def __init__(self,
                  device: Literal["cpu", "cuda:0"] = "cpu",
                  conf: float = 0.25,
-                 layout_merge_bboxes_mode: Literal["large", "small"] | dict = "large",
+                 layout_merge_bboxes_mode: Literal["large", "small", "union"] | dict = "large",
                  layout_nms: bool = True):
         model_path = os.path.join(pkg.ModelDir, "paddle", "PP-DocLayoutV3")
         ensure_dir(model_path)
@@ -81,6 +81,7 @@ class PPDocLayout(LayoutModel):
         return blocks
 
     def format(self, image_list: list[str]) -> list[list[LayoutResult]]:
+        # print(f"image_list: {image_list}")
         if len(image_list) == 0:
             return []
 

@@ -51,6 +51,12 @@ class ContainerInfo(BaseModel):
 
 class ColumnsInfo(ContainerInfo):
     image_path: str
+    crop_path: Optional[str] = Field(default=None)
+    crop_bbox: Optional[list[float]] = Field(
+        default=None,
+        min_length=4,
+        max_length=4
+    )
     columns_list: list[CellInfo]
     category_type: Literal["formula", "text", "unknown"] = "text"
     block_content: ModelInfo | None = None

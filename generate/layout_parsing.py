@@ -19,6 +19,7 @@ from generate.font_position import layout_labels, draw_labels_info
 from typing import Optional
 from mode_interface.table import TablePosition
 from generate.table_cell_position import clean_cell_detections, table_cell_category
+from generate.table_cell_content import TableCellContent
 from mode_interface.table.pp_table_classification import PPTableClassification
 from mode_interface.ocr import pp_ocr, OCRContent
 from llm.local_llm import LocalLLM
@@ -34,7 +35,7 @@ class ParsingInfo(BaseModel):
     device: Literal["cpu", "cuda:0"] = "cpu"
     llm_conf: LLMConfig
     conf: float = Field(default=0.25, gt=0, le=1)
-    table_conf: float = Field(default=0.1, gt=0, le=1)
+    table_conf: float = Field(default=0.25, gt=0, le=1)
     padding: int = 12
     max_workers: int = Field(default=4, ge=1)
     max_retry: int = 3
@@ -249,6 +250,7 @@ class LayoutParsing:
 
         loop = asyncio.get_running_loop()
 
+        # print(f"image_list -> {image_list}")
         async with self.infer_semaphore:
             results = await loop.run_in_executor(
                 self.executor,
@@ -270,6 +272,16 @@ class LayoutParsing:
 
         if table_info is None:
             return table_pos, None
+
+        table_cell_content = TableCellContent(
+            device=self.parsing_info.device,
+            conf=self.parsing_info.table_conf,
+            layout_merge_bboxes_mode="small",
+            max_retry=self.parsing_info.max_retry,
+            max_workers=self.parsing_info.max_workers,
+        )
+
+        table_info = await table_cell_content.run(table_info=table_info)
 
         row_and_col_pos: list[tuple[int, int]] = []
         img_path_list: list[ImageResponse] = []
@@ -625,11 +637,11 @@ class LayoutParsing:
 
         file_parsing_data = await self.table_handle(file_parsing_data)
 
-        file_parsing_data = [
-            await self.ocr_handel_file_parsing(file_parsing_result)
-            for file_parsing_result in file_parsing_data
-        ]
+        # file_parsing_data = [
+        #     await self.ocr_handel_file_parsing(file_parsing_result)
+        #     for file_parsing_result in file_parsing_data
+        # ]
 
-        file_parsing_data = await self.set_block_content(file_parsing_data=file_parsing_data)
+        # file_parsing_data = await self.set_block_content(file_parsing_data=file_parsing_data)
 
         return file_parsing_data
