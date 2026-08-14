@@ -82,14 +82,14 @@ class TableCellOCRContent:
         for (i, j), ocr_content in zip(row_and_col_pos, ocr_content_list):
             cell = table_info.table_list[i].rows_list[j]
             image_path = Path(cell.image_path)
-            print(f"image_path -> {str(image_path)}")
+            # print(f"image_path -> {str(image_path)}")
 
             img = Image.open(image_path).convert("RGB")
             img_w, img_h = img.size
 
             x1, y1, x2, y2 = map(float, ocr_content[0])
 
-            print(f"bbox --> {ocr_content}")
+            # print(f"bbox --> {ocr_content}")
 
             for bbox in ocr_content[1:]:
                 b_x1, b_y1, b_x2, b_y2 = map(float, bbox)
@@ -116,6 +116,6 @@ class TableCellOCRContent:
             )
             cell.crop_content = crop_info
 
-            print(f"crop_bbox -> {[crop_x1, crop_y1, crop_x2, crop_y2]}")
+            # print(f"crop_bbox -> {[crop_x1, crop_y1, crop_x2, crop_y2]}")
 
         return table_info

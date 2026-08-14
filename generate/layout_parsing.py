@@ -35,7 +35,6 @@ class ParsingInfo(BaseModel):
     device: Literal["cpu", "cuda:0"] = "cpu"
     llm_conf: LLMConfig
     conf: float = Field(default=0.25, gt=0, le=1)
-    table_conf: float = Field(default=0.25, gt=0, le=1)
     padding: int = 12
     max_workers: int = Field(default=4, ge=1)
     max_retry: int = 3
@@ -62,18 +61,8 @@ class LayoutParsing:
             conf=parsing_info.conf
         )
 
-        # table layout
-        self.table_model = PPDocLayout(
-            device=parsing_info.device,
-            conf=parsing_info.table_conf,
-            layout_merge_bboxes_mode="small"
-        )
-
         # ocr
         self.ocr_model = pp_ocr.PPOcrVl(device=parsing_info.device)
-
-        # table
-        self.table_classification = PPTableClassification()
 
         # llm_config
         self.llm_config = parsing_info.llm_conf
@@ -197,7 +186,7 @@ class LayoutParsing:
         exec_num = 0
         while exec_num < self.parsing_info.max_retry:
             try:
-                parsing_info_list = self.table_model.format(image_list=[item.image_path for item in image_list])
+                parsing_info_list = self.model.format(image_list=[item.image_path for item in image_list])
                 break
             except Exception as e:
                 logger.error(e)
@@ -330,7 +319,8 @@ class LayoutParsing:
         if not file_parsing_result:
             return file_parsing_result
 
-        list_table_position = self.table_classification.format(file_parsing_result)
+        table_classification = PPTableClassification()
+        list_table_position = table_classification.format(file_parsing_result)
 
         if len(list_table_position) <= 0:
             return file_parsing_result
@@ -378,9 +368,12 @@ class LayoutParsing:
             copy_img = img
             for p, output_path in [(padding, ocr_output_dir), (50, llm_output_dir)]:
                 if output_path == llm_output_dir:
+                    if block.block_label_type in ['image', 'table']:
+                        continue
+
                     draw_img = draw_labels_info(
                         image_info=image_info,
-                        bbox_label_list=[BboxLabel(block_label="__content__", block_bbox=block.block_bbox)],
+                        bbox_label_list=[BboxLabel(block_label="", block_bbox=block.block_bbox)],
                         font_scale=self.parsing_info.font_scale,
                         font_space=self.parsing_info.font_space,
                         border_space=self.parsing_info.border_space,
@@ -638,11 +631,11 @@ class LayoutParsing:
 
         file_parsing_data = await self.table_handle(file_parsing_data)
 
-        # file_parsing_data = [
-        #     await self.ocr_handel_file_parsing(file_parsing_result)
-        #     for file_parsing_result in file_parsing_data
-        # ]
+        file_parsing_data = [
+            await self.ocr_handel_file_parsing(file_parsing_result)
+            for file_parsing_result in file_parsing_data
+        ]
 
-        # file_parsing_data = await self.set_block_content(file_parsing_data=file_parsing_data)
+        file_parsing_data = await self.set_block_content(file_parsing_data=file_parsing_data)
 
         return file_parsing_data
