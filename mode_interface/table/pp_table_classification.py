@@ -70,7 +70,6 @@ class PPTableClassification:
         for img_l in chunk_list(img_list):
             pred = model_wireless.predict(
                 input=img_l,
-                batch_size=len(img_l),
             )
             results += pred
 
@@ -91,7 +90,6 @@ class PPTableClassification:
         for img_l in chunk_list(img_list):
             pred = model_wired.predict(
                 input=img_l,
-                batch_size=len(img_l),
             )
             results += pred
 
@@ -118,8 +116,7 @@ class PPTableClassification:
         results: list[TopkResult] = []
         for img_list in chunk_list(img_list_pos):
             pred = self.model.predict(
-                input=img_list_pos,
-                batch_size=len(img_list),
+                input=img_list,
             )
             results += pred
 

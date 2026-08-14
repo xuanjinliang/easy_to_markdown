@@ -19,7 +19,7 @@ from generate.font_position import layout_labels, draw_labels_info
 from typing import Optional
 from mode_interface.table import TablePosition
 from generate.table_cell_position import clean_cell_detections, table_cell_category
-from generate.table_cell_content import TableCellContent
+from generate.table_cell_content import TableCellOCRContent
 from mode_interface.table.pp_table_classification import PPTableClassification
 from mode_interface.ocr import pp_ocr, OCRContent
 from llm.local_llm import LocalLLM
@@ -273,14 +273,10 @@ class LayoutParsing:
         if table_info is None:
             return table_pos, None
 
-        table_cell_content = TableCellContent(
+        table_cell_content = TableCellOCRContent(
             device=self.parsing_info.device,
-            conf=self.parsing_info.table_conf,
-            layout_merge_bboxes_mode="small",
-            max_retry=self.parsing_info.max_retry,
-            max_workers=self.parsing_info.max_workers,
+            max_workers=max(1, round(self.parsing_info.max_workers / 2)),
         )
-
         table_info = await table_cell_content.run(table_info=table_info)
 
         row_and_col_pos: list[tuple[int, int]] = []
@@ -289,10 +285,15 @@ class LayoutParsing:
             for j, columns in enumerate(rows.rows_list):
                 row_and_col_pos.append((i, j))
 
+                crop_info = columns.crop_content
+
+                if crop_info is None:
+                    continue
+
                 img_path_list.append(ImageResponse(
-                    image_path=columns.image_path,
-                    width=columns.width,
-                    height=columns.height,
+                    image_path=crop_info.image_path,
+                    width=crop_info.width,
+                    height=crop_info.height,
                 ))
 
         output_dir = Path(table_info.img_output_dir).parent

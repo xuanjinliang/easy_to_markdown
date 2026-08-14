@@ -86,8 +86,7 @@ class PPDocLayout(LayoutModel):
             return []
 
         results = self.model.predict(
-            input=image_list,
-            batch_size=len(image_list)
+            input=image_list
         )
 
         parsing_info_list = [

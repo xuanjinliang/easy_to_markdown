@@ -71,7 +71,8 @@ class PPOcr(OcrInterface):
 
 
 class PPOcrVl(OcrInterface):
-    def __init__(self, device: Literal["cpu", "cuda:0"] = "cpu"):
+    def __init__(self,
+                 device: Literal["cpu", "cuda:0"] = "cpu"):
         model_path = os.path.join(pkg.ModelDir, "paddle")
         ensure_dir(model_path)
 
@@ -88,7 +89,7 @@ class PPOcrVl(OcrInterface):
             use_doc_unwarping=False,
             merge_layout_blocks=False,
             device=device,
-            enable_hpi=enable_hpi,
+            enable_hpi=enable_hpi
         )
 
     @staticmethod
