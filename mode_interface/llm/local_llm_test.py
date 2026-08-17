@@ -21,7 +21,7 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
 
         file_parsing_result_list = file_parsing_result_list[:1]
 
-        local_llm = LocalLLM(system_info=system_info, temperature=0, device="mlx")
+        local_llm = LocalLLM(temperature=0, device="mlx")
 
         messages = []
         for file_parsing in file_parsing_result_list:
@@ -47,7 +47,7 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
 
                 prompt = f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
 
-                message = local_llm.set_message(prompt=prompt, image_list=[llm_crop_path])
+                message = local_llm.set_message(prompt=prompt, image_list=[llm_crop_path], system_info=system_info)
                 messages.append(message)
 
         results = await local_llm.predict(messages=messages)

@@ -7,7 +7,6 @@ from llm_model.qwen3_vl import QwenTransformersModel, QwenMlxModel
 
 class LocalLLM:
     def __init__(self,
-                 system_info: str,
                  temperature: int = 1,
                  max_output_tokens=8192,
                  device: Literal["transformers", "mlx"] = "transformers"):
@@ -26,13 +25,10 @@ class LocalLLM:
                 max_output_tokens=max_output_tokens
             ))
 
-        if len(system_info) > 0:
-            self.system_info = system_info
-
-    def set_message(self, prompt: str, image_list: list[str]) -> list[dict[str, Any]]:
+    def set_message(self, prompt: str, image_list: list[str], system_info="") -> list[dict[str, Any]]:
         input_prompt = []
-        if len(self.system_info) > 0:
-            input_prompt = self.llm_model.generate_message(content=self.system_info, role="system")
+        if len(system_info) > 0:
+            input_prompt = self.llm_model.generate_message(content=system_info, role="system")
 
         for image in image_list:
             input_prompt += self.llm_model.preprocess_image(prompt=prompt, images=[image])

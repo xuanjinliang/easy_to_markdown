@@ -16,13 +16,14 @@ from PIL import Image
 from pathlib import Path
 import cv2
 from generate.font_position import layout_labels, draw_labels_info
+from generate.set_block_content import SetBlockContent
 from typing import Optional
 from mode_interface.table import TablePosition
 from generate.table_cell_position import clean_cell_detections, table_cell_category
 from generate.table_cell_content import TableCellOCRContent
 from mode_interface.table.pp_table_classification import PPTableClassification
 from mode_interface.ocr import pp_ocr, OCRContent
-from llm.local_llm import LocalLLM
+from mode_interface.llm.local_llm import LocalLLM
 import logging
 from logging import NullHandler
 
@@ -64,27 +65,8 @@ class LayoutParsing:
         # ocr
         self.ocr_model = pp_ocr.PPOcrVl(device=parsing_info.device)
 
-        # llm_config
-        self.llm_config = parsing_info.llm_conf
-
-    def get_llm_model(self, system_info_type: int = 1) -> LocalLLM:
-
-        prompt_path = ""
-        match system_info_type:
-            case 1:
-                prompt_path = os.path.join(pkg.PromptDir, "doc_understanding_assistant.md")
-            case 2:
-                prompt_path = os.path.join(pkg.PromptDir, "natural_reading_assistant.md")
-
-        system_info = Path(prompt_path).read_text(encoding="utf-8")
-
-        local_llm = LocalLLM(
-            system_info=system_info,
-            temperature=self.llm_config.temperature,
-            max_output_tokens=self.llm_config.max_output_tokens,
-            device=self.llm_config.device)
-
-        return local_llm
+        # llm
+        self.llm_model = SetBlockContent(llm_conf=parsing_info.llm_conf)
 
     @staticmethod
     def set_ocr_content_prompt(ocr_content: OCRContent | None) -> str | None:
@@ -102,8 +84,6 @@ class LayoutParsing:
         return f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
 
     async def set_table_content(self, table_info: TableInfo) -> TableInfo:
-        llm_model = self.get_llm_model(system_info_type=2)
-
         messages = []
         columns_index: list[tuple[int, int]] = []
         for i, row_info in enumerate(table_info.table_list):
@@ -122,14 +102,18 @@ class LayoutParsing:
                 if prompt is None:
                     continue
 
-                message = llm_model.set_message(prompt=prompt, image_list=[image_path])
+                message = self.llm_model.set_message(
+                    prompt=prompt,
+                    image_list=[image_path],
+                    system_info_type=2
+                )
                 messages.append(message)
                 columns_index.append((i, j))
 
         if len(messages) <= 0:
             return table_info
 
-        results = await llm_model.predict(messages=messages)
+        results = await self.llm_model.predict(messages=messages)
         for (i, j), result in zip(columns_index, results):
             row_info = table_info.table_list
             row_info[i].rows_list[j].block_content = result
@@ -137,8 +121,6 @@ class LayoutParsing:
         return table_info
 
     async def set_block_content(self, file_parsing_data: list[FileParsingResult]) -> list[FileParsingResult]:
-        llm_model = self.get_llm_model(system_info_type=1)
-
         for file_parsing in file_parsing_data:
             messages = []
             block_index: list[int] = []
@@ -158,14 +140,18 @@ class LayoutParsing:
                 if prompt is None:
                     continue
 
-                message = llm_model.set_message(prompt=prompt, image_list=[llm_crop_path])
+                message = self.llm_model.set_message(
+                    prompt=prompt,
+                    image_list=[llm_crop_path],
+                    system_info_type=1
+                )
                 messages.append(message)
                 block_index.append(i)
 
             if len(messages) <= 0:
                 continue
 
-            results = await llm_model.predict(messages=messages)
+            results = await self.llm_model.predict(messages=messages)
             for index, result in zip(block_index, results):
                 file_parsing.blocks[index].block_content = result
 
