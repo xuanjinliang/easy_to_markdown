@@ -4,6 +4,7 @@ from typing import Any
 from pathlib import Path
 from mode_interface.llm.local_llm import LocalLLM, ModelInfo
 from generate import LLMConfig
+from mode_interface.ocr import OCRContent
 
 
 class SetBlockContent:
@@ -28,6 +29,21 @@ class SetBlockContent:
             return ""
 
         return Path(prompt_path).read_text(encoding="utf-8")
+
+    @staticmethod
+    def set_ocr_content_prompt(ocr_content: OCRContent | None) -> str | None:
+        if ocr_content is None:
+            return None
+
+        content = ocr_content.content
+        bbox = ocr_content.bbox
+
+        if (not isinstance(content, list) or
+                not isinstance(bbox, list) or
+                len(content) <= 0 or len(bbox) <= 0):
+            return None
+
+        return f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
 
     def set_message(self, prompt: str, image_list: list[str], system_info_type: int) -> list[dict[str, Any]]:
         system_info = self.set_system_info(system_info_type)

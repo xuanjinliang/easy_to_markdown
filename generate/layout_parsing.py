@@ -23,7 +23,6 @@ from generate.table_cell_position import clean_cell_detections, table_cell_categ
 from generate.table_cell_content import TableCellOCRContent
 from mode_interface.table.pp_table_classification import PPTableClassification
 from mode_interface.ocr import pp_ocr, OCRContent
-from mode_interface.llm.local_llm import LocalLLM
 import logging
 from logging import NullHandler
 
@@ -68,21 +67,6 @@ class LayoutParsing:
         # llm
         self.llm_model = SetBlockContent(llm_conf=parsing_info.llm_conf)
 
-    @staticmethod
-    def set_ocr_content_prompt(ocr_content: OCRContent | None) -> str | None:
-        if ocr_content is None:
-            return None
-
-        content = ocr_content.content
-        bbox = ocr_content.bbox
-
-        if (not isinstance(content, list) or
-                not isinstance(bbox, list) or
-                len(content) <= 0 or len(bbox) <= 0):
-            return None
-
-        return f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
-
     async def set_table_content(self, table_info: TableInfo) -> TableInfo:
         messages = []
         columns_index: list[tuple[int, int]] = []
@@ -98,7 +82,7 @@ class LayoutParsing:
                 if not image_path:
                     continue
 
-                prompt = self.set_ocr_content_prompt(columns_info.ocr_content)
+                prompt = self.llm_model.set_ocr_content_prompt(columns_info.ocr_content)
                 if prompt is None:
                     continue
 
@@ -136,7 +120,7 @@ class LayoutParsing:
                 if llm_crop_path is None:
                     continue
 
-                prompt = self.set_ocr_content_prompt(block.ocr_content)
+                prompt = self.llm_model.set_ocr_content_prompt(block.ocr_content)
                 if prompt is None:
                     continue
 
