@@ -1,5 +1,3 @@
-from transformers.processing_utils import transformers_module
-
 import pkg
 import os
 from pathlib import Path
