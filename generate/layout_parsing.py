@@ -82,7 +82,12 @@ class LayoutParsing:
                 if not image_path:
                     continue
 
-                prompt = self.llm_model.set_ocr_content_prompt(columns_info.ocr_content)
+                ocr_content = columns_info.ocr_content
+                if (not isinstance(ocr_content, OCRContent) or
+                        len(ocr_content.bbox) <= 0 or len(ocr_content.content) <= 0):
+                    continue
+
+                prompt = self.llm_model.set_ocr_content_prompt(ocr_content)
                 if prompt is None:
                     continue
 
@@ -120,7 +125,12 @@ class LayoutParsing:
                 if llm_crop_path is None:
                     continue
 
-                prompt = self.llm_model.set_ocr_content_prompt(block.ocr_content)
+                ocr_content = block.ocr_content
+                if (not isinstance(ocr_content, OCRContent) or
+                        len(ocr_content.bbox) <= 0 or len(ocr_content.content) <= 0):
+                    continue
+
+                prompt = self.llm_model.set_ocr_content_prompt(ocr_content)
                 if prompt is None:
                     continue
 
@@ -489,7 +499,11 @@ class LayoutParsing:
             )
 
         for (index, _), ocr_content in zip(tasks, results):
-            cell_list[index].ocr_content = ocr_content
+            if len(ocr_content.content) <= 0 or len(ocr_content.bbox) == 0 or all(
+                    len(x) <= 0 for x in ocr_content.content):
+                cell_list[index].ocr_content = None
+            else:
+                cell_list[index].ocr_content = ocr_content
 
         return cell_list
 
@@ -569,7 +583,11 @@ class LayoutParsing:
             )
 
         for (index, _), ocr_content in zip(text_blocks_index, results):
-            blocks[index].ocr_content = ocr_content
+            if len(ocr_content.content) <= 0 or len(ocr_content.bbox) == 0 or all(
+                    len(x) <= 0 for x in ocr_content.content):
+                blocks[index].ocr_content = None
+            else:
+                blocks[index].ocr_content = ocr_content
 
         return blocks
 

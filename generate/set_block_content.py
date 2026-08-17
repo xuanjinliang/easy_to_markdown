@@ -36,14 +36,12 @@ class SetBlockContent:
             return None
 
         content = ocr_content.content
-        bbox = ocr_content.bbox
 
-        if (not isinstance(content, list) or
-                not isinstance(bbox, list) or
-                len(content) <= 0 or len(bbox) <= 0):
+        if not isinstance(content, list) or len(content) <= 0:
             return None
 
-        return f"[Ocr Content]\n{content}\n\n[Ocr bbox]\n{bbox}\n"
+        str_content = "\n\n".join(content).replace("𫊸", "")
+        return f"<ocr_content>\n{str_content}\n</ocr_content>"
 
     def set_message(self, prompt: str, image_list: list[str], system_info_type: int) -> list[dict[str, Any]]:
         system_info = self.set_system_info(system_info_type)
@@ -51,4 +49,9 @@ class SetBlockContent:
             prompt=prompt, image_list=image_list, system_info=system_info)
 
     async def predict(self, messages: list[list[dict[str, Any]]]) -> list[ModelInfo]:
-        return await self.local_llm.predict(messages=messages)
+        results = await self.local_llm.predict(messages=messages)
+
+        for result in results:
+            result.content = result.content.replace("<ocr_content>", "").replace("</ocr_content>", "")
+
+        return results

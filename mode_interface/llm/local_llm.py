@@ -39,6 +39,6 @@ class LocalLLM:
         results = await self.llm_model.request_vllm(messages=messages)
 
         return [
-            item.result
+            item.result if item.success else ModelInfo()
             for item in results
         ]
