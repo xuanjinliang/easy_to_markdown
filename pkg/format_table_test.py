@@ -4,7 +4,7 @@ from pkg.format_table import Table, TableCell, HtmlTableRenderer
 
 class FormatTable(unittest.TestCase):
     def test_format_table1(self):
-        table = Table(id="table-001", caption="学生成绩表", )
+        table = Table(caption="学生成绩表", )
 
         table.add_row(
             TableCell(text="姓名", rowspan=2, tag="th"),
@@ -30,7 +30,7 @@ class FormatTable(unittest.TestCase):
         print(table.to_html())
 
     def test_format_table2(self):
-        table = Table(id="table-002", caption="销售统计", )
+        table = Table(caption="销售统计", )
 
         table.add_row(
             TableCell(text="产品", rowspan=2, tag="th"),

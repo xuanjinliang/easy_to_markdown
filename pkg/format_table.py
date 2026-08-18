@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from lxml import etree
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal
@@ -27,8 +26,6 @@ class Table(BaseModel):
         default_factory=list
     )
     caption: str | None = None
-    id: str | None = None
-
     def add_row(self, *cells: TableCell) -> TableRow:
         row = TableRow(
             cells=list(cells)
