@@ -4,7 +4,8 @@ from pathlib import Path
 from uuid import uuid4
 import shutil
 
-from generate import FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult, ModelInfo
+from generate import (FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult,
+                      ModelInfo, TableInfo)
 
 
 class MarkdownWriter:
@@ -54,8 +55,7 @@ class MarkdownJsonWriter:
                     markdown_info.block_content = f"{'#' * block.level} {block.block_content.content}\n\n"
             case "image":
                 if block.crop_path is not None and os.path.exists(block.crop_path):
-                    image_path = self.set_image_content(block.crop_path)
-                    markdown_info.image_path = f'<img src="{image_path}" alt="Image" />'
+                    markdown_info.image_path = self.set_image_content(block.crop_path)
             case "table":
                 markdown_info.block_content = ""
             case _:
@@ -63,6 +63,9 @@ class MarkdownJsonWriter:
                     markdown_info.block_content = f"{block.block_content.content}\n"
 
         return markdown_info
+
+    def set_table_content(self, table_info: TableInfo):
+        pass
 
     def set_image_content(self, image_path: str) -> str:
         original = Path(image_path)
@@ -73,7 +76,9 @@ class MarkdownJsonWriter:
 
         shutil.copy2(original, dst)
 
-        return str(dst.relative_to(self.output_dir))
+        image_path = str(dst.relative_to(self.output_dir))
+
+        return f'<img src="{image_path}" alt="Image" />'
 
     def generate_blocks(self, blocks: list[ParsingResult]) -> list[MarkdownInfo]:
 

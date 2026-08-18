@@ -3,7 +3,6 @@ import os
 import pkg
 import json
 from generate import FileParsingResult
-
 from generate.to_md import MarkdownJsonWriter
 
 
@@ -18,4 +17,3 @@ class ToMarkdown(unittest.TestCase):
         md_json_writer = MarkdownJsonWriter(pkg.MDDir)
         md_json_info = md_json_writer.run(file_parsing_result_list)
         print(md_json_info)
-
