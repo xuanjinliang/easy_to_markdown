@@ -8,7 +8,7 @@ from ocr import OCRContent
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):
     async def test_set_block_content(self):
-        self.llm_model = SetBlockContent(llm_conf=LLMConfig(device="mlx"))
+        llm_model = SetBlockContent(llm_conf=LLMConfig(device="mlx"))
 
         image_path = os.path.join(
             pkg.PdfTempDir,
@@ -30,14 +30,14 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
                 ]
             ]
         )
-        prompt = self.llm_model.set_ocr_content_prompt(ocr_content)
+        prompt = llm_model.set_ocr_content_prompt(ocr_content)
         if prompt is None:
             return
 
-        message = self.llm_model.set_message(
+        message = llm_model.set_message(
             prompt=prompt,
             image_list=[image_path],
             system_info_type=1
         )
-        results = await self.llm_model.predict(messages=[message])
+        results = await llm_model.predict(messages=[message])
         print(results)

@@ -89,3 +89,19 @@ class LLMConfig(BaseModel):
     temperature: int = 0
     max_output_tokens: int = 8192 * 2
     device: Literal["transformers", "mlx"] = "transformers"
+
+
+class MarkdownInfo(BaseModel):
+    block_id: int = Field(ge=0)
+    block_label: str
+    block_bbox: list[float] = Field(..., min_length=4, max_length=4)
+    block_label_type: str = ""
+    level: int = 0
+    block_content: str = ""
+    image_path: Optional[str] = Field(default=None)
+
+
+class MarkdownFileResult(BaseModel):
+    img_info: ImageResponse
+    page: int = 1
+    children: list[MarkdownInfo] = []
