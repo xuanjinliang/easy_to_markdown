@@ -1,65 +1,39 @@
 import unittest
-from pkg.format_table import Table, TableCell, HtmlTableRenderer
+from pkg.format_table import Table, TableCell
 
 
 class FormatTable(unittest.TestCase):
     def test_format_table1(self):
-        table = Table(caption="学生成绩表", )
+        table = Table(width=600, height=200, caption="学生成绩表")
 
         table.add_row(
-            TableCell(text="姓名", rowspan=2, tag="th"),
-            TableCell(text="成绩", colspan=2, tag="th"),
+            TableCell(text="姓名", tag="th", bbox=[0,0,200,200]),
+            TableCell(text="语文", tag="th", bbox=[200,0,300,100]),
+            TableCell(text="数学", tag="th", bbox=[300,0,600,100]),
         )
 
         table.add_row(
-            TableCell(text="语文", tag="th"),
-            TableCell(text="数学", tag="th"),
+            TableCell(text="90", bbox=[200,100,300,200]),
+            TableCell(text="95", bbox=[300,100,600,200]),
         )
 
-        table.add_row(
-            TableCell(text="张三", bbox=[100, 200, 300, 250]),
-            TableCell(text="90", bbox=[300, 200, 400, 250]),
-            TableCell(text="95", bbox=[400, 200, 500, 250]),
+        table.calculate_spans(
+            tolerance=5
         )
 
-        table.add_row(
-            TableCell(text="李四"),
-            TableCell(text="88"),
-            TableCell(text="92"),
-        )
+        for cell in table.get_cells():
+            print(
+                f"text={cell.text!r}, "
+                f"row={cell.row}, "
+                f"col={cell.col}, "
+                f"rowspan={cell.rowspan}, "
+                f"colspan={cell.colspan}"
+            )
+
+
         print(table.to_html())
 
     def test_format_table2(self):
-        table = Table(caption="销售统计", )
-
-        table.add_row(
-            TableCell(text="产品", rowspan=2, tag="th"),
-            TableCell(text="2026", colspan=2, tag="th"),
-            TableCell(text="总计", rowspan=2, tag="th"),
-        )
-
-        table.add_row(
-            TableCell(text="Q1", tag="th"),
-            TableCell(text="Q2", tag="th"),
-        )
-
-        table.add_row(
-            TableCell(text="A"),
-            TableCell(text="100"),
-            TableCell(text="120"),
-            TableCell(text="220"),
-        )
-
-        table.add_row(
-            TableCell(text="B"),
-            TableCell(text="200"),
-            TableCell(text="180"),
-            TableCell(text="380"),
-        )
-
-        print(table.to_html())
-
-    def test_format_table3(self):
         cell = TableCell(
             text="张三",
             row=2,
