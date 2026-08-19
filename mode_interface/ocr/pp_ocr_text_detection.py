@@ -36,7 +36,6 @@ class PPOcrTextDetection:
                 dt_polys[:, :, 0].max(axis=1, keepdims=True),
                 dt_polys[:, :, 1].max(axis=1, keepdims=True),
             ], axis=1)
-            print(f"result_np-->{result_np.tolist()}")
             return result_np.tolist()
 
         if isinstance(dt_polys, list) and len(dt_polys) > 0:
