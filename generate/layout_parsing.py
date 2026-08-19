@@ -62,7 +62,8 @@ class LayoutParsing:
         )
 
         # ocr
-        self.ocr_model = pp_ocr.PPOcrVl(device=parsing_info.device)
+        # self.ocr_model = pp_ocr.PPOcrVl(device=parsing_info.device)
+        self.ocr_model = pp_ocr.PPOcr(device=parsing_info.device)
 
         # llm
         self.llm_model = SetBlockContent(llm_conf=parsing_info.llm_conf)
@@ -173,6 +174,7 @@ class LayoutParsing:
             finally:
                 exec_num += 1
 
+
         for i, blocks in enumerate(parsing_info_list):
             if not blocks:
                 category_list.append(TableCellCategory(
@@ -192,13 +194,13 @@ class LayoutParsing:
                                            cell_image=image_info,
                                            table_w=table_width,
                                            table_h=table_height)
+            vis_path = self.draw_layout_boxes(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
 
             cell_category = TableCellCategory(
                 category_type=category,
             )
             if category == "unknown":
                 parsing_result = self.crop_blocks(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
-                vis_path = self.draw_layout_boxes(image_info=image_info, blocks=parsing_result, output_dir=output_dir)
 
                 cell_category.parsing_result = FileParsingResult(
                     img_info=image_info,
@@ -267,7 +269,7 @@ class LayoutParsing:
         output_dir = Path(table_info.img_output_dir).parent
         tasks = []
 
-        for batch in chunk_list(img_path_list, 5):
+        for batch in chunk_list(img_path_list, 2):
             task = asyncio.create_task(
                 self.table_cell_handle(batch, str(output_dir), table_info.width, table_info.height)
             )

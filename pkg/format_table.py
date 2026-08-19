@@ -248,8 +248,13 @@ class Table(BaseModel):
 
 
 class HtmlTableRenderer:
+    border_style = "border: 1px solid black;"
+
     def render(self, table: Table) -> str:
-        table_element = etree.Element("table")
+        table_element = etree.Element(
+            "table",
+            style=f"border-collapse: collapse;{self.border_style}"
+        )
 
         if table.caption:
             caption = etree.SubElement(
@@ -263,6 +268,7 @@ class HtmlTableRenderer:
             tr = etree.SubElement(
                 table_element,
                 "tr",
+                style=f"{self.border_style}"
             )
 
             for cell in row.cells:
@@ -294,7 +300,7 @@ class HtmlTableRenderer:
 
     def _render_cell(self, tr: etree._Element, cell: TableCell) -> None:
 
-        td = etree.SubElement(tr, cell.tag)
+        td = etree.SubElement(tr, cell.tag, style=f"{self.border_style}")
         # rowspan
         if cell.rowspan > 1:
             td.set("rowspan", str(cell.rowspan))
