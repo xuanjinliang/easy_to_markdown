@@ -29,16 +29,20 @@ class PPOcrTextDetection:
     def process_item(result: TextDetResult) -> list[list[float]]:
         dt_polys = result.get('dt_polys', [])
 
-        if isinstance(dt_polys, np.ndarray):
+        if isinstance(dt_polys, np.ndarray) and dt_polys.size > 0:
             result_np = np.concatenate([
                 dt_polys[:, :, 0].min(axis=1, keepdims=True),
                 dt_polys[:, :, 1].min(axis=1, keepdims=True),
                 dt_polys[:, :, 0].max(axis=1, keepdims=True),
                 dt_polys[:, :, 1].max(axis=1, keepdims=True),
             ], axis=1)
+            print(f"result_np-->{result_np.tolist()}")
             return result_np.tolist()
 
-        return dt_polys
+        if isinstance(dt_polys, list) and len(dt_polys) > 0:
+            return dt_polys
+
+        return []
 
     def advanced_recognition(self, image_list: list[str]) -> list[list[list[float]]]:
         if not image_list:

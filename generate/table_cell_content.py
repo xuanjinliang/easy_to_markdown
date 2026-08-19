@@ -65,7 +65,7 @@ class TableCellOCRContent:
                 img_path_list.append(columns.image_path)
 
         output_dir = Path(table_info.img_output_dir).parent
-        output_dir = os.path.join(output_dir, "cell_crop_content")
+        output_dir = os.path.join(output_dir, "cell_crop_info")
         ensure_dir(output_dir)
 
         tasks = []
@@ -86,6 +86,9 @@ class TableCellOCRContent:
 
             img = Image.open(image_path).convert("RGB")
             img_w, img_h = img.size
+
+            if len(ocr_content) <= 0:
+                continue
 
             x1, y1, x2, y2 = map(float, ocr_content[0])
 
@@ -114,7 +117,7 @@ class TableCellOCRContent:
                 height=img_h,
                 bbox=[crop_x1, crop_y1, crop_x2, crop_y2]
             )
-            cell.crop_content = crop_info
+            cell.crop_info = crop_info
 
             # print(f"crop_bbox -> {[crop_x1, crop_y1, crop_x2, crop_y2]}")
 

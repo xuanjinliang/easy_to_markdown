@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from uuid import uuid4
 import shutil
-
+from pkg.format_table import Table, TableCell
 from generate import (FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult,
                       ModelInfo, TableInfo)
 
@@ -32,9 +32,11 @@ class MarkdownWriter:
 
 
 class MarkdownJsonWriter:
-    def __init__(self, output_dir: str):
+    def __init__(self, output_dir: str, tolerance: float = 5.0):
         self.output_dir = output_dir
         ensure_dir(output_dir)
+
+        self.tolerance = tolerance
 
     def set_content(self, block: ParsingResult) -> MarkdownInfo:
         markdown_info = MarkdownInfo(
@@ -57,15 +59,31 @@ class MarkdownJsonWriter:
                 if block.crop_path is not None and os.path.exists(block.crop_path):
                     markdown_info.image_path = self.set_image_content(block.crop_path)
             case "table":
-                markdown_info.block_content = ""
+                if isinstance(block.table_info, TableInfo):
+                    markdown_info.block_content = self.set_table_content(block.table_info)
             case _:
                 if isinstance(block.block_content, ModelInfo):
                     markdown_info.block_content = f"{block.block_content.content}\n"
 
         return markdown_info
 
-    def set_table_content(self, table_info: TableInfo):
-        pass
+    def set_table_content(self, table_info: TableInfo) -> str:
+        if len(table_info.table_list) == 0:
+            return ""
+
+        table = Table(width=table_info.width, height=table_info.height)
+
+        for rows in table_info.table_list:
+            table_cell = []
+            for cell in rows.rows_list:
+                content = cell.block_content.content if cell.block_content is not None else ""
+                table_cell.append(TableCell(text=content, bbox=cell.bbox))
+
+            if len(table_cell) > 0:
+                table.add_row(cells=table_cell)
+
+        table.calculate_spans(tolerance=self.tolerance)
+        return table.to_html()
 
     def set_image_content(self, image_path: str) -> str:
         original = Path(image_path)

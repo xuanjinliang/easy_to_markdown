@@ -55,7 +55,7 @@ class ContainerInfoPath(ContainerInfo):
 
 class ColumnsInfo(ContainerInfo):
     image_path: str
-    crop_content: ContainerInfoPath | None = None
+    crop_info: ContainerInfoPath | None = None
     columns_list: list[CellInfo]
     category_type: Literal["formula", "text", "unknown"] = "text"
     block_content: ModelInfo | None = None

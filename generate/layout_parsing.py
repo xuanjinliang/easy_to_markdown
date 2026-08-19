@@ -232,7 +232,6 @@ class LayoutParsing:
 
         return results
 
-    # 通过PP_doc_layout识别
     async def table_handle_item(self, table_pos: TablePosition) -> tuple[TablePosition, TableInfo | None]:
         img_path = table_pos.crop_path
         table_content = table_pos.table_content
@@ -254,7 +253,7 @@ class LayoutParsing:
             for j, columns in enumerate(rows.rows_list):
                 row_and_col_pos.append((i, j))
 
-                crop_info = columns.crop_content
+                crop_info = columns.crop_info
 
                 if crop_info is None:
                     continue

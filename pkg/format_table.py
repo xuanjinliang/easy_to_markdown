@@ -32,7 +32,7 @@ class Table(BaseModel):
     )
     caption: str | None = None
 
-    def add_row(self, *cells: TableCell) -> TableRow:
+    def add_row(self, cells: list[TableCell]) -> TableRow:
         row = TableRow(
             cells=list(cells)
         )
@@ -274,7 +274,24 @@ class HtmlTableRenderer:
         )
 
     @staticmethod
-    def _render_cell(tr: etree._Element, cell: TableCell) -> None:
+    def set_text_with_br(
+            element: etree._Element,
+            text: str,
+    ) -> None:
+        parts = text.split("\n")
+
+        if not parts:
+            return
+
+        element.text = parts[0]
+        for part in parts[1:]:
+            br = etree.SubElement(
+                element,
+                "br",
+            )
+            br.tail = part
+
+    def _render_cell(self, tr: etree._Element, cell: TableCell) -> None:
 
         td = etree.SubElement(tr, cell.tag)
         # rowspan
@@ -285,4 +302,5 @@ class HtmlTableRenderer:
         if cell.colspan > 1:
             td.set("colspan", str(cell.colspan), )
 
-        td.text = cell.text
+        # td.text = cell.text
+        self.set_text_with_br(td, cell.text)
