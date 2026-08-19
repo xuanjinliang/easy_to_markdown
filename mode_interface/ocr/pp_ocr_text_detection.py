@@ -8,7 +8,10 @@ from paddlex.inference.models.text_detection.result import TextDetResult
 
 
 class PPOcrTextDetection:
-    def __init__(self, device: Literal["cpu", "cuda:0"] = "cpu", box_thresh: float = 0.5):
+    def __init__(self,
+                 device: Literal["cpu", "cuda:0"] = "cpu",
+                 thresh: float = 0.3,
+                 box_thresh: float = 0.5):
         model_path = os.path.join(pkg.ModelDir, "paddle")
         ensure_dir(model_path)
 
@@ -21,6 +24,7 @@ class PPOcrTextDetection:
             model_name="PP-OCRv6_medium_det",
             model_dir=os.path.join(model_path, "PP-OCRv6_medium_det"),
             device=device,
+            thresh=thresh,
             box_thresh=box_thresh,
             enable_hpi=enable_hpi
         )

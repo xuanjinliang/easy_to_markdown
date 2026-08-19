@@ -76,6 +76,15 @@ class MarkdownJsonWriter:
         for rows in table_info.table_list:
             table_cell = []
             for cell in rows.rows_list:
+                if cell.columns_blocks is not None:
+                    blocks = cell.columns_blocks.blocks
+                    content = ""
+                    for block in blocks:
+                        markdown_info = self.set_content(block)
+                        content += markdown_info.block_content
+                    table_cell.append(TableCell(html=content, bbox=cell.bbox))
+                    continue
+
                 content = cell.block_content.content if cell.block_content is not None else ""
                 table_cell.append(TableCell(text=content, bbox=cell.bbox))
 
