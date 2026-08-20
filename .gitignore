@@ -4,6 +4,6 @@
 .claude
 .venv
 __debug_bin
-/src/easy_to_markdownpdf_temp/
-/src/easy_to_markdownmodel/
+/src/easy_to_markdown/pdf_temp/
+/src/easy_to_markdown/model/
 /src/easy_to_markdown/md_dir/

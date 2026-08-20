@@ -8,6 +8,7 @@ from easy_to_markdown.generate import FileParsingResult
 from easy_to_markdown.mode_interface.table import TablePosition
 from paddlex.inference.models.image_classification.result import TopkResult
 from paddlex.inference.models.object_detection.result import DetResult
+from easy_to_markdown.pkg.coordinate_overlap import get_overlap_result_np
 
 
 class PPTableClassification:
@@ -63,13 +64,15 @@ class PPTableClassification:
             model_name="RT-DETR-L_wireless_table_cell_det",
             model_dir=self.model_path_wireless,
             device=self.device,
-            threshold=self.conf
+            threshold=self.conf,
+            layout_nms=True
         )
 
         results: list[DetResult] = []
         for img_l in chunk_list(img_list):
             pred = model_wireless.predict(
                 input=img_l,
+                batch_size=1
             )
             results += pred
 
@@ -83,13 +86,15 @@ class PPTableClassification:
             model_name="RT-DETR-L_wired_table_cell_det",
             model_dir=self.model_path_wired,
             device=self.device,
-            threshold=self.conf
+            threshold=self.conf,
+            layout_nms=True
         )
 
         results: list[DetResult] = []
         for img_l in chunk_list(img_list):
             pred = model_wired.predict(
                 input=img_l,
+                batch_size=1
             )
             results += pred
 
@@ -150,6 +155,74 @@ class PPTableClassification:
         row_and_col_info_list = self.wireless_format(wireless_img_list) + self.wired_format(wired_img_list)
 
         for i, item in enumerate(table_position_list):
-            item.table_content = row_and_col_info_list[i]
+            item.table_content = self.remove_repeat_blocks(row_and_col_info_list[i])
 
         return table_position_list
+
+    def remove_repeat_blocks(self, table_content: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if len(table_content) <= 0:
+            return []
+
+        bbox_list = [item.get("coordinate", [0, 0, 0, 0]) for item in table_content]
+        overlap_result = get_overlap_result_np(bbox_list, no_duplicate=True)
+        for item in overlap_result:
+            if len(item.overlap) == 0:
+                continue
+
+            self.filter_overlap_by_area(
+                [table_content[item.index]] + [table_content[index] for index in item.overlap])
+
+        return [item for item in table_content if not item.get("remove", False)]
+
+    @staticmethod
+    def calc_overlap_ratio(block1: dict[str, Any], block2: dict[str, Any]) -> tuple[float, float, float]:
+        box1 = block1.get("coordinate", [0, 0, 0, 0])
+        box2 = block2.get("coordinate", [0, 0, 0, 0])
+
+        x1 = max(box1[0], box2[0])
+        y1 = max(box1[1], box2[1])
+        x2 = min(box1[2], box2[2])
+        y2 = min(box1[3], box2[3])
+
+        if x2 <= x1 or y2 <= y1:
+            return 0.0, 0.0, 0.0
+
+        intersection = (
+                (x2 - x1) *
+                (y2 - y1)
+        )
+
+        area1 = (
+                (box1[2] - box1[0]) *
+                (box1[3] - box1[1])
+        )
+
+        area2 = (
+                (box2[2] - box2[0]) *
+                (box2[3] - box2[1])
+        )
+
+        return intersection / min(area1, area2), area1, area2
+
+    def filter_overlap_by_area(self, table_content: list[dict[str, Any]], threshold: float = 0.8):
+        if len(table_content) < 2:
+            return
+
+        keep_block = None
+        for block in table_content:
+            if block.get("remove", False):
+                continue
+
+            if keep_block is None:
+                keep_block = block
+                continue
+
+            ratio, are1, are2 = self.calc_overlap_ratio(keep_block, block)
+            if ratio < threshold:
+                continue
+
+            if are1 > are2:
+                block["remove"] = True
+            else:
+                keep_block["remove"] = True
+                keep_block = block

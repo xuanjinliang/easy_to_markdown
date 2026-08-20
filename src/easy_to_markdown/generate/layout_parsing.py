@@ -189,6 +189,7 @@ class LayoutParsing:
             image_info = image_list[i]
 
             parsing_result = set_block_process(blocks=parsing_result)
+            parsing_result = remove_repeat_blocks(blocks=parsing_result)
             category = table_cell_category(blocks=parsing_result,
                                            cell_image=image_info,
                                            table_w=table_width,

@@ -59,8 +59,15 @@ def filter_overlap_by_area(
     if len(blocks) < 2:
         return
 
-    keep_block = blocks[0]
-    for block in blocks[1:]:
+    keep_block = None
+    for block in blocks:
+        if block.remove:
+            continue
+
+        if keep_block is None:
+            keep_block = block
+            continue
+
         if block.block_label_type == "image" or keep_block.block_label_type == "image":
             continue
 
