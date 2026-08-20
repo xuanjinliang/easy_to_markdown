@@ -98,7 +98,7 @@ class MarkdownInfo(BaseModel):
     block_label_type: str = ""
     level: int = 0
     block_content: str = ""
-    image_path: Optional[str] = Field(default=None)
+    block_image_content: Optional[str] = Field(default=None)
 
 
 class MarkdownFileResult(BaseModel):

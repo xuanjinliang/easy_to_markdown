@@ -3,7 +3,7 @@ import os
 import pkg
 import json
 from generate import FileParsingResult
-from generate.to_md import MarkdownJsonWriter
+from generate.to_md import MarkdownJsonWriter, MarkdownFileResult, MarkdownWriter
 
 
 class ToMarkdown(unittest.TestCase):
@@ -27,3 +27,16 @@ class ToMarkdown(unittest.TestCase):
 
         with open(os.path.join(pkg.MDDir, "md_result.json"), "w", encoding="utf-8") as f:
             f.write(json_str)
+
+    def test_output_markdown(self):
+        with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        list_markdown_file_result = [MarkdownFileResult.model_validate(item) for item in data]
+
+        with MarkdownWriter(file_path=os.path.join(pkg.MDDir, "md_result.md")) as md_writer:
+            for file_result in list_markdown_file_result:
+                for item in file_result.children:
+                    content = item.block_image_content if item.block_image_content is not None else item.block_content
+                    md_writer.write(content)
+

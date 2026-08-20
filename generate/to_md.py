@@ -46,7 +46,7 @@ class MarkdownJsonWriter:
             block_label_type=block.block_label_type,
             level=block.level,
             block_content="",
-            image_path=None
+            block_image_content=None
         )
 
         label_type = block.block_label_type
@@ -57,13 +57,13 @@ class MarkdownJsonWriter:
                     markdown_info.block_content = f"{'#' * block.level} {block.block_content.content}\n\n"
             case "image":
                 if block.crop_path is not None and os.path.exists(block.crop_path):
-                    markdown_info.image_path = self.set_image_content(block.crop_path)
+                    markdown_info.block_image_content = self.set_image_content(block.crop_path)
             case "table":
                 if isinstance(block.table_info, TableInfo):
                     markdown_info.block_content = self.set_table_content(block.table_info)
             case _:
                 if isinstance(block.block_content, ModelInfo):
-                    markdown_info.block_content = f"{block.block_content.content}\n"
+                    markdown_info.block_content = f"{block.block_content.content}\n\n"
 
         return markdown_info
 
@@ -92,7 +92,7 @@ class MarkdownJsonWriter:
                 table.add_row(cells=table_cell)
 
         table.calculate_spans(tolerance=self.tolerance)
-        return table.to_html()
+        return table.to_html() + "\n\n"
 
     def set_image_content(self, image_path: str) -> str:
         original = Path(image_path)
@@ -105,7 +105,7 @@ class MarkdownJsonWriter:
 
         image_path = str(dst.relative_to(self.output_dir))
 
-        return f'<img src="{image_path}" alt="Image" />'
+        return f'<img src="{image_path}" alt="Image" />\n\n'
 
     def generate_blocks(self, blocks: list[ParsingResult]) -> list[MarkdownInfo]:
 
