@@ -2,9 +2,9 @@ import argparse
 import logging
 import warnings
 import sys
-from easy_to_markdown.pkg.version import version
-from easy_to_markdown.pkg.deprecation import CLIDeprecationWarning
-from easy_to_markdown.pkg.logging import logger
+from easy_to_markdown.util.version import version
+from easy_to_markdown.util.deprecation import CLIDeprecationWarning
+from easy_to_markdown.util.logging import logger
 
 
 def _get_parser():
