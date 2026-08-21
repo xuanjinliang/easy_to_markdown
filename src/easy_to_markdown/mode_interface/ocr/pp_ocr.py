@@ -12,7 +12,7 @@ from paddlex.inference.pipelines.paddleocr_vl.result import PaddleOCRVLResult
 class PPOcr(OcrInterface):
     def __init__(self,
                  device: Literal["cpu", "cuda:0"] = "cpu",
-                 text_thresh: float = 0.5):
+                 text_thresh: float = 0.6):
         model_path = os.path.join(pkg.ModelDir, "paddle")
         ensure_dir(model_path)
 
@@ -31,7 +31,9 @@ class PPOcr(OcrInterface):
             device=device,
             enable_hpi=enable_hpi,
             textline_orientation_batch_size=1,
-            text_recognition_batch_size=1
+            text_recognition_batch_size=1,
+            text_rec_score_thresh=text_thresh,
+            return_word_box=True
         )
 
     @staticmethod

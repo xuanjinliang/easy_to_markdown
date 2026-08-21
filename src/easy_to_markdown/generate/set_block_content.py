@@ -21,9 +21,9 @@ class SetBlockContent:
 
         match system_info_type:
             case 1:
-                prompt_path = os.path.join(pkg.PromptDir, "doc_understanding_assistant.md")
-            case 2:
-                prompt_path = os.path.join(pkg.PromptDir, "natural_reading_assistant.md")
+                prompt_path = os.path.join(pkg.PromptDir, "doc_assistant.md")
+            # case 2:
+            #     prompt_path = os.path.join(pkg.PromptDir, "natural_reading_assistant.md")
 
         if len(prompt_path) <= 0:
             return ""

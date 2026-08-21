@@ -51,7 +51,7 @@ class LayoutParsing:
 
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.infer_semaphore = asyncio.Semaphore(max_workers)
-        # self.pipeline_lock = asyncio.Lock()
+        self.pipeline_lock = asyncio.Lock()
         self.parsing_info = parsing_info
 
         # layout
@@ -94,7 +94,7 @@ class LayoutParsing:
                 message = self.llm_model.set_message(
                     prompt=prompt,
                     image_list=[image_path],
-                    system_info_type=2
+                    system_info_type=1
                 )
                 messages.append(message)
                 columns_index.append((i, j))
@@ -574,7 +574,7 @@ class LayoutParsing:
 
         loop = asyncio.get_running_loop()
 
-        async with self.infer_semaphore:
+        async with self.pipeline_lock:
             results = await loop.run_in_executor(
                 self.executor,
                 self.ocr_inference,
@@ -593,7 +593,7 @@ class LayoutParsing:
     async def ocr_handel_file_parsing(self, file_parsing_result: FileParsingResult) -> FileParsingResult:
         blocks = file_parsing_result.blocks
         tasks = []
-        for batch in chunk_list(blocks, 2):
+        for batch in chunk_list(blocks, 5):
             task = asyncio.create_task(self.ocr_handle_item(batch))
             tasks.append(task)
 
