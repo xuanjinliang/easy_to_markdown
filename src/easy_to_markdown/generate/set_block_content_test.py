@@ -36,3 +36,30 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         results = await llm_model.predict(messages=[message])
         print(results[0].content)
         print(results[0])
+
+
+    async def test_image_truncation(self):
+        llm_model = SetBlockContent(llm_conf=LLMConfig(device="mlx"))
+
+        image_path1 = os.path.join(
+            pkg.PdfTempDir,
+            "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
+            "pdf_image",
+            "page_3.webp"
+        )
+
+        image_path2 = os.path.join(
+            pkg.PdfTempDir,
+            "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
+            "pdf_image",
+            "page_4.webp"
+        )
+
+        message = llm_model.set_message(
+            prompt="Image 1 and Image 2",
+            image_list=[image_path1, image_path2],
+            system_info_type=2
+        )
+        results = await llm_model.predict(messages=[message])
+        print(results[0].content)
+        print(results[0])

@@ -132,6 +132,13 @@ class MarkdownJsonWriter:
 
         blocks_info_list: list[MarkdownInfo] = []
         for block in blocks:
+            if block.remove:
+                continue
+
+            md_info = self.set_content(block)
+            if len(md_info.block_content) == 0 and md_info.block_image_content is None:
+                continue
+
             blocks_info_list.append(self.set_content(block))
 
         return blocks_info_list
