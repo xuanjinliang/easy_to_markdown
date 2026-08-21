@@ -52,6 +52,9 @@ class SetBlockContent:
         results = await self.local_llm.predict(messages=messages)
 
         for result in results:
-            result.content = result.content.replace("<ocr_content>", "").replace("</ocr_content>", "")
+            if result.content is None:
+                result.content = ""
+            else:
+                result.content = result.content.replace("<ocr_content>", "").replace("</ocr_content>", "")
 
         return results

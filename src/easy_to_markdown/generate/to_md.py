@@ -3,22 +3,43 @@ import os
 from pathlib import Path
 from uuid import uuid4
 import shutil
+from easy_to_markdown.pkg.enum_class import BlockType
 from easy_to_markdown.pkg.format_table import Table, TableCell
 from easy_to_markdown.generate import (FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult,
-                      ModelInfo, TableInfo)
+                                       ModelInfo, TableInfo)
 
 
 class MarkdownWriter:
-    def __init__(self, file_path: str, mode: str = "w", ignore_labels: list[str] | None = None):
+    def __init__(self, file_path: str, mode: str = "w",
+                 ignore_labels: list[str] | None = None,
+                 ignore_header: bool = True,
+                 ignore_footer: bool = True):
         self.ignore_labels = [] if ignore_labels is None else ignore_labels
+        self.ignore_footer_label = [BlockType.FOOTER, BlockType.FOOTER_IMAGE,
+                                    BlockType.FOOTNOTE] if ignore_footer else []
+
+        if ignore_header:
+            self.ignore_labels += [BlockType.HEADER, BlockType.HEADER_IMAGE]
+
         self.md_file = open(file_path, mode, encoding="utf-8")
 
-    def write(self, content: str):
+    def write(self, markdown_info: MarkdownInfo):
+        if len(self.ignore_labels) > 0 and markdown_info.block_label in self.ignore_labels:
+            return
+
+        content = markdown_info.block_image_content if (
+                markdown_info.block_image_content is not None) else markdown_info.block_content
         self.md_file.write(content)
         self.md_file.flush()
 
-    def write_line(self, content: str):
-        self.write(content + "\n")
+    def write_list(self, list_markdown_info: list[MarkdownInfo]):
+        if len(list_markdown_info) == 0:
+            return
+
+        for markdown_info in list_markdown_info:
+            if len(self.ignore_footer_label) > 0 and markdown_info.block_label in self.ignore_footer_label:
+                break
+            self.write(markdown_info)
 
     def close(self):
         if not self.md_file.closed:

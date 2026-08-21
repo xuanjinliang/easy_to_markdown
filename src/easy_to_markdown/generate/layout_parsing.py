@@ -8,7 +8,7 @@ from src.easy_to_markdown.pkg.draw_label import BboxLabel
 from concurrent.futures import ThreadPoolExecutor
 from easy_to_markdown.mode_interface.layout.pp_doclayout import PPDocLayout
 from easy_to_markdown.generate import (FileParsingResult, ParsingResult, TableInfo,
-                      TableCellCategory, ColumnsInfo, LLMConfig)
+                                       TableCellCategory, ColumnsInfo, LLMConfig)
 from easy_to_markdown.generate.block_process import set_block_process, remove_repeat_blocks
 from easy_to_markdown.pkg.common import ensure_dir, chunk_list
 from PIL import Image
@@ -172,7 +172,6 @@ class LayoutParsing:
                 logger.error(e)
             finally:
                 exec_num += 1
-
 
         for i, blocks in enumerate(parsing_info_list):
             if not blocks:
@@ -486,9 +485,8 @@ class LayoutParsing:
 
     async def ocr_table_info_cell(self, cell_list: list[ColumnsInfo]) -> list[ColumnsInfo]:
         tasks = [
-            (i, cell.image_path)
+            (i, cell.crop_info.image_path if cell.crop_info is not None else cell.image_path)
             for i, cell in enumerate(cell_list)
-            if cell.image_path is not None
         ]
 
         loop = asyncio.get_running_loop()
@@ -595,7 +593,7 @@ class LayoutParsing:
     async def ocr_handel_file_parsing(self, file_parsing_result: FileParsingResult) -> FileParsingResult:
         blocks = file_parsing_result.blocks
         tasks = []
-        for batch in chunk_list(blocks, 5):
+        for batch in chunk_list(blocks, 2):
             task = asyncio.create_task(self.ocr_handle_item(batch))
             tasks.append(task)
 

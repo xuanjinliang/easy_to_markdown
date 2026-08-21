@@ -14,21 +14,15 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             pkg.PdfTempDir,
             "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
             "llm_crops_img",
-            "page_2",
-            "3_text.webp"
+            "page_4",
+            "5_footer.webp"
         )
         ocr_content = OCRContent(
             content=[
-                "𫊸"
+                "AMZN DOC# 4602358_10",
+                "2024-11-11",
+                "DE"
             ],
-            bbox=[
-                [
-                    0.0,
-                    0.0,
-                    640.0,
-                    55.0
-                ]
-            ]
         )
         prompt = llm_model.set_ocr_content_prompt(ocr_content)
         if prompt is None:
@@ -40,4 +34,5 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             system_info_type=1
         )
         results = await llm_model.predict(messages=[message])
-        print(results)
+        print(results[0].content)
+        print(results[0])

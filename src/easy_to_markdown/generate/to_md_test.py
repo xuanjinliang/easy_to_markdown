@@ -4,6 +4,7 @@ from easy_to_markdown import pkg
 import json
 from easy_to_markdown.generate import FileParsingResult
 from easy_to_markdown.generate.to_md import MarkdownJsonWriter, MarkdownFileResult, MarkdownWriter
+from easy_to_markdown.pkg.enum_class import BlockType
 
 
 class ToMarkdown(unittest.TestCase):
@@ -34,9 +35,15 @@ class ToMarkdown(unittest.TestCase):
 
         list_markdown_file_result = [MarkdownFileResult.model_validate(item) for item in data]
 
-        with MarkdownWriter(file_path=os.path.join(pkg.MDDir, "md_result.md")) as md_writer:
+        with MarkdownWriter(
+                file_path=os.path.join(pkg.MDDir, "md_result.md"),
+                ignore_labels=[
+                    BlockType.HEADER,
+                    BlockType.HEADER_IMAGE,
+                    BlockType.FOOTER,
+                    BlockType.FOOTER_IMAGE,
+                    BlockType.FOOTNOTE
+                ]
+        ) as md_writer:
             for file_result in list_markdown_file_result:
-                for item in file_result.children:
-                    content = item.block_image_content if item.block_image_content is not None else item.block_content
-                    md_writer.write(content)
-
+                md_writer.write_list(file_result.children)
