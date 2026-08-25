@@ -3,7 +3,7 @@ from typing import Any, Optional, Generic, TypeVar
 from easy_to_markdown.llm_model import ClientConfig
 from easy_to_markdown.pkg.result import Result
 import uuid
-from easy_to_markdown.llm_model import LocalModelConfig
+from easy_to_markdown.llm_model import LocalModelConfig, APIModelConfig
 
 T = TypeVar("T")
 
@@ -45,7 +45,7 @@ class LLMInterface(ABC, Generic[T]):
 
 class LocalModelInterface(ABC, Generic[T]):
     @abstractmethod
-    def __init__(self, config: LocalModelConfig):
+    def __init__(self, config: LocalModelConfig | APIModelConfig):
         pass
 
     @staticmethod

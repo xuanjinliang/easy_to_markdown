@@ -6,7 +6,7 @@ authors = [
     {name = "xuanjinliang",email = "xuanjinliang@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.11,<4"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "doclayout-yolo (>=0.0.4,<0.0.5)",
     "pillow (>=12.2.0,<13.0.0)",
@@ -23,6 +23,7 @@ dependencies = [
     "qwen-vl-utils (>=0.0.14,<0.0.15)",
     "mlx-vlm (>=0.6.10,<0.7.0)",
     "lxml (>=6.1.1,<7.0.0)",
+    "openai (>=3.3.1,<4.0.0)",
 ]
 
 
