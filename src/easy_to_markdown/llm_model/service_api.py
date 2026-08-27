@@ -180,13 +180,15 @@ class LLMServiceApi(LocalModelInterface):
             for image in images:
                 content.append(
                     {
-                        "type": "input_image",
-                        "image_url": image,
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image
+                        }
                     }
                 )
 
         if prompt is not None and len(prompt) > 0:
-            content.append({"type": "input_text", "text": prompt})
+            content.append({"type": "text", "text": prompt})
 
         return self.generate_message(content=content)
 
