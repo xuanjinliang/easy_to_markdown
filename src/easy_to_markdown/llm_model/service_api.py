@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from easy_to_markdown.llm_model import APIModelConfig, TextFormat
 from easy_to_markdown.llm_model.interface import LocalModelInterface
 from openai import AsyncOpenAI
@@ -99,8 +100,9 @@ class OpenAPIWorker:
         if config is not None:
             llm_config = self.update_llm_config(config=config)
 
+        model_version = Path(llm_config.model_id).name
         result = ModelInfo(
-            model_version=llm_config.model_id
+            model_version=model_version
         )
 
         try:

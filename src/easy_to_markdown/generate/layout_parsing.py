@@ -8,8 +8,9 @@ from src.easy_to_markdown.pkg.draw_label import BboxLabel
 from concurrent.futures import ThreadPoolExecutor
 from easy_to_markdown.mode_interface.layout.pp_doclayout import PPDocLayout
 from easy_to_markdown.generate import (FileParsingResult, ParsingResult, TableInfo,
-                                       TableCellCategory, ColumnsInfo, LLMConfig)
+                                       TableCellCategory, ColumnsInfo)
 from easy_to_markdown.generate.block_process import set_block_process, remove_repeat_blocks
+from easy_to_markdown.llm_model import APIModelConfig
 from easy_to_markdown.pkg.common import ensure_dir, chunk_list
 from PIL import Image
 from pathlib import Path
@@ -32,7 +33,7 @@ logger.addHandler(NullHandler())
 class ParsingInfo(BaseModel):
     image_list: list[ImageResponse]
     device: Literal["cpu", "cuda:0"] = "cpu"
-    llm_conf: LLMConfig
+    llm_conf: APIModelConfig
     conf: float = Field(default=0.25, gt=0, le=1)
     padding: int = 12
     max_workers: int = Field(default=4, ge=1)

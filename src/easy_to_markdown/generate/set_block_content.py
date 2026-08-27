@@ -3,17 +3,13 @@ from easy_to_markdown import pkg
 from typing import Any
 from pathlib import Path
 from easy_to_markdown.mode_interface.llm.local_llm import LocalLLM, ModelInfo
-from easy_to_markdown.generate import LLMConfig
+from easy_to_markdown.llm_model import APIModelConfig
 from easy_to_markdown.mode_interface.ocr import OCRContent
 
 
 class SetBlockContent:
-    def __init__(self, llm_conf: LLMConfig):
-
-        self.local_llm = LocalLLM(
-            temperature=llm_conf.temperature,
-            max_output_tokens=llm_conf.max_output_tokens,
-            device=llm_conf.device)
+    def __init__(self, llm_conf: APIModelConfig):
+        self.local_llm = LocalLLM(config=llm_conf)
 
     @staticmethod
     def set_system_info(system_info_type: int = 1) -> str:

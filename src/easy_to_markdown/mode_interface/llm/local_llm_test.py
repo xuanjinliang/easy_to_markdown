@@ -5,10 +5,12 @@ import json
 from pathlib import Path
 from easy_to_markdown.generate import FileParsingResult
 from llm.local_llm import LocalLLM
-from ocr import OCRContent
+from easy_to_markdown.llm_model import APIModelConfig
 
 
 class TestPPOcr(unittest.IsolatedAsyncioTestCase):
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+
     async def test_local_llm(self):
         path_obj = os.path.join(pkg.PromptDir, "doc_understanding_assistant.md")
         system_info = Path(path_obj).read_text(encoding="utf-8")
@@ -21,7 +23,12 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
 
         file_parsing_result_list = file_parsing_result_list[:1]
 
-        local_llm = LocalLLM(temperature=0, device="mlx")
+        local_llm = LocalLLM(config=APIModelConfig(
+            model=self.model_path,
+            temperature=0,
+            base_url="http://localhost:8777/v1",
+            api_key="not-needed"
+        ))
 
         messages = []
         for file_parsing in file_parsing_result_list:

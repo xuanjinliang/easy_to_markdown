@@ -1,29 +1,12 @@
-import os
-from easy_to_markdown import pkg
-from typing import Literal, Any
-from easy_to_markdown.llm_model import LocalModelConfig, ModelInfo
-from easy_to_markdown.llm_model.qwen3_vl import QwenTransformersModel, QwenMlxModel
+from typing import Any
+from easy_to_markdown.llm_model import ModelInfo
+from easy_to_markdown.llm_model import APIModelConfig
+from easy_to_markdown.llm_model.service_api import LLMServiceApi
 
 
 class LocalLLM:
-    def __init__(self,
-                 temperature: int = 1,
-                 max_output_tokens=8192,
-                 device: Literal["transformers", "mlx"] = "transformers"):
-        self.device = device
-
-        if device == "mlx":
-            self.llm_model = QwenMlxModel(config=LocalModelConfig(
-                model_path=os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-4B-Instruct-8bit"),
-                temperature=temperature,
-                max_output_tokens=max_output_tokens
-            ))
-        else:
-            self.llm_model = QwenTransformersModel(config=LocalModelConfig(
-                model_path=os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-4B-Instruct"),
-                temperature=temperature,
-                max_output_tokens=max_output_tokens
-            ))
+    def __init__(self, config: APIModelConfig):
+        self.llm_model = LLMServiceApi(config=config)
 
     def set_message(self, prompt: str, image_list: list[str], system_info="") -> list[dict[str, Any]]:
         input_prompt = []

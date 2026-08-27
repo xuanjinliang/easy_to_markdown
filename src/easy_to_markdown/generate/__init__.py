@@ -84,13 +84,6 @@ class TableCellCategory(BaseModel):
     category_type: Literal["formula", "text", "unknown"]
     parsing_result: FileParsingResult | None = None
 
-
-class LLMConfig(BaseModel):
-    temperature: int = 0
-    max_output_tokens: int = 8192 * 2
-    device: Literal["transformers", "mlx"] = "transformers"
-
-
 class MarkdownInfo(BaseModel):
     block_id: int = Field(ge=0)
     block_label: str

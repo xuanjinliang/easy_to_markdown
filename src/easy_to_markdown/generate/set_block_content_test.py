@@ -2,13 +2,20 @@ import unittest
 import os
 from easy_to_markdown import pkg
 from easy_to_markdown.generate.set_block_content import SetBlockContent
-from easy_to_markdown.generate import LLMConfig
+from easy_to_markdown.llm_model import APIModelConfig
 from ocr import OCRContent
 
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+
     async def test_set_block_content(self):
-        llm_model = SetBlockContent(llm_conf=LLMConfig(device="mlx"))
+        llm_model = SetBlockContent(llm_conf=APIModelConfig(
+            model=self.model_path,
+            temperature=0,
+            base_url="http://localhost:8777/v1",
+            api_key="not-needed"
+        ))
 
         image_path = os.path.join(
             pkg.PdfTempDir,
@@ -37,9 +44,13 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         print(results[0].content)
         print(results[0])
 
-
     async def test_image_truncation(self):
-        llm_model = SetBlockContent(llm_conf=LLMConfig(device="mlx"))
+        llm_model = SetBlockContent(llm_conf=APIModelConfig(
+            model=self.model_path,
+            temperature=0,
+            base_url="http://localhost:8777/v1",
+            api_key="not-needed"
+        ))
 
         image_path1 = os.path.join(
             pkg.PdfTempDir,

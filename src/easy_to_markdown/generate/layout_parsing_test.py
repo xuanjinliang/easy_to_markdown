@@ -4,12 +4,14 @@ from easy_to_markdown import pkg
 import json
 import re
 from easy_to_markdown.pkg.pdf_to_image import ImageResponse
-from easy_to_markdown.generate import LLMConfig
 from easy_to_markdown.generate.layout_parsing import ParsingInfo, LayoutParsing
 from pathlib import Path
+from easy_to_markdown.llm_model import APIModelConfig
 
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+
     async def test_layout_parsing(self):
         output_dir = os.path.join(pkg.PdfTempDir, "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c")
 
@@ -42,8 +44,11 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
 
         parsing_info = ParsingInfo(
             image_list=image_list,
-            llm_conf=LLMConfig(
-                device="mlx"
+            llm_conf=APIModelConfig(
+                model=self.model_path,
+                temperature=0,
+                base_url="http://localhost:8777/v1",
+                api_key="not-needed"
             )
         )
         layout = LayoutParsing(parsing_info=parsing_info)
@@ -79,8 +84,11 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
 
         parsing_info = ParsingInfo(
             image_list=image_list,
-            llm_conf=LLMConfig(
-                device="mlx"
+            llm_conf=APIModelConfig(
+                model=self.model_path,
+                temperature=0,
+                base_url="http://localhost:8777/v1",
+                api_key="not-needed"
             )
         )
         layout = LayoutParsing(parsing_info=parsing_info)
