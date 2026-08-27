@@ -134,7 +134,7 @@ class OpenAPIWorker:
                         if delta.content:
                             answer_content += delta.content
 
-                        if delta.model_extra and delta.model_extra['reasoning_content']:
+                        if delta.model_extra and delta.model_extra.get("reasoning_content"):
                             reasoning_content += delta.model_extra['reasoning_content']
 
                     if chunk.usage:
@@ -161,6 +161,9 @@ class OpenAPIWorker:
             return Result(success=True, result=result, error=None)
         except Exception as e:
             return Result(success=False, result=result, error={e})
+
+    async def close(self):
+        await self.client.close()
 
 
 class LLMServiceApi(LocalModelInterface):
@@ -218,4 +221,7 @@ class LLMServiceApi(LocalModelInterface):
             task = asyncio.create_task(self.handle_item(message, schema))
             tasks.append(task)
 
-        return await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+        await self.client.close()
+
+        return results
