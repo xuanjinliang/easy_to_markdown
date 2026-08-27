@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from pydantic import BaseModel
 from typing import Any, Optional, Generic, TypeVar
 from easy_to_markdown.llm_model import ClientConfig
 from easy_to_markdown.pkg.result import Result
@@ -58,5 +59,6 @@ class LocalModelInterface(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    async def request_vllm(self, messages: list[list[dict[str, Any]]]) -> list[Result]:
+    async def request_vllm(self, messages: list[list[dict[str, Any]]], schema: type[BaseModel] | None = None) -> list[
+        Result]:
         pass

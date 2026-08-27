@@ -215,7 +215,6 @@ Output **only the corrected text in the natural reading order**, without any add
             temperature=0
         ))
 
-        schema = Description.model_json_schema()
         image_list = [
             os.path.join(pkg.PdfTempDir,
                          "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c/crops_img/page_1/1_header.webp"),
@@ -229,5 +228,5 @@ Output **only the corrected text in the natural reading order**, without any add
                                                            images=[image])
             input_list.append(input_prompt)
 
-        results = await qwen_mlx_model.request_vllm(messages=input_list, schema=schema)
+        results = await qwen_mlx_model.request_vllm(messages=input_list, schema=Description)
         print(results)

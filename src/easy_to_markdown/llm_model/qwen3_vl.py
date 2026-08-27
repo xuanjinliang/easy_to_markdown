@@ -10,6 +10,7 @@ from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
 from mlx_vlm import load, generate
 from mlx_vlm.prompt_utils import apply_chat_template
 from typing import Any
+from pydantic import BaseModel
 from mlx_vlm.structured import build_json_schema_logits_processor
 
 import logging
@@ -180,7 +181,7 @@ class QwenTransformersModel(LocalModelInterface):
             )
 
     async def request_vllm(self,
-                           messages: list[list[dict[str, Any]]]) -> list[Result]:
+                           messages: list[list[dict[str, Any]]], schema: type[BaseModel] | None = None) -> list[Result]:
         if not messages:
             return []
 
@@ -210,7 +211,7 @@ class QwenMlxWorker:
 
     def inference(self,
                   messages: list[dict[str, Any]],
-                  schema: dict[str, Any] | None = None) -> Result:
+                  schema: type[BaseModel] | None) -> Result:
         image_list: list[str] = []
         for message in messages:
             content = message.get("content", None)
@@ -238,9 +239,10 @@ class QwenMlxWorker:
             else:
                 tokenizer = self.processor
 
+            schema_dict = schema.model_json_schema()
             schema_processor = build_json_schema_logits_processor(
                 tokenizer,
-                schema,
+                schema_dict,
             )
             logits_processors = [schema_processor]
 
@@ -315,13 +317,13 @@ class QwenMlxModel(LocalModelInterface):
             }
         ]
 
-    def _run_worker(self, worker_id: int, messages: list[dict[str, Any]], schema: dict[str, Any] | None) -> Result:
+    def _run_worker(self, worker_id: int, messages: list[dict[str, Any]], schema: type[BaseModel] | None) -> Result:
         worker = self.workers[worker_id]
         return worker.inference(
             messages, schema
         )
 
-    async def handle_item(self, messages: list[dict[str, Any]], schema: dict[str, Any] | None) -> Result:
+    async def handle_item(self, messages: list[dict[str, Any]], schema: type[BaseModel] | None) -> Result:
         worker_id = await self.worker_queue.get()
 
         try:
@@ -346,7 +348,7 @@ class QwenMlxModel(LocalModelInterface):
 
     async def request_vllm(self,
                            messages: list[list[dict[str, Any]]],
-                           schema: dict[str, Any] | None = None) -> list[Result]:
+                           schema: type[BaseModel] | None = None) -> list[Result]:
         if not messages:
             return []
 
