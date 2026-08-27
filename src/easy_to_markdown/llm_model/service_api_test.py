@@ -7,7 +7,7 @@ from easy_to_markdown.llm_model import APIModelConfig
 
 
 class Description(BaseModel):
-    text: str
+    output: str
 
 
 class TestLayoutModel(unittest.IsolatedAsyncioTestCase):

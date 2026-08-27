@@ -4,7 +4,7 @@ from easy_to_markdown.llm_model.interface import LocalModelInterface
 from openai import AsyncOpenAI
 from openai.lib._pydantic import to_strict_json_schema
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Optional
 from easy_to_markdown.llm_model import ModelInfo
 from easy_to_markdown.pkg.merge import deep_merge
 from easy_to_markdown.pkg.result import Result
@@ -21,7 +21,7 @@ class LLMConfig(BaseModel):
     temperature: int
     max_tokens: int
     stream: bool
-    reasoning_effort: str
+    reasoning_effort: Optional[str]
     parallel_tool_calls: bool
     extra_body: dict[str, Any]
     response_format: dict[str, Any] | None = None
@@ -47,7 +47,8 @@ class OpenAPIWorker:
 
         reasoning_list: list[str] = ["high", "medium", "low", "minimal"]
         reasoning_effort = config.reasoning_effort if (
-                config.reasoning_effort in reasoning_list) else reasoning_list[1]
+                config.reasoning_effort is not None and
+                config.reasoning_effort in reasoning_list) else None
 
         llm_config = LLMConfig(
             model_id="Qwen3-VL-4B-Instruct-8bit" if config.model is None else config.model,
@@ -103,12 +104,14 @@ class OpenAPIWorker:
         )
 
         try:
+
             params = {
                 "model": llm_config.model_id,
                 "messages": messages,
                 "temperature": llm_config.temperature,
                 "max_tokens": llm_config.max_tokens,
                 "stream": llm_config.stream,
+                "reasoning_effort": llm_config.reasoning_effort,
                 "parallel_tool_calls": llm_config.parallel_tool_calls,
                 "extra_body": llm_config.extra_body,
                 "response_format": llm_config.response_format
@@ -138,6 +141,7 @@ class OpenAPIWorker:
                         input_tokens = chunk.usage.prompt_tokens
                         output_tokens = chunk.usage.completion_tokens
 
+                await response.close()
             else:
                 if not response.choices:
                     logger.info(f"Usage:{response.usage}")
@@ -157,9 +161,6 @@ class OpenAPIWorker:
             return Result(success=True, result=result, error=None)
         except Exception as e:
             return Result(success=False, result=result, error={e})
-
-    async def close(self):
-        await self.client.close()
 
 
 class LLMServiceApi(LocalModelInterface):
@@ -217,6 +218,4 @@ class LLMServiceApi(LocalModelInterface):
             task = asyncio.create_task(self.handle_item(message, schema))
             tasks.append(task)
 
-        results = await asyncio.gather(*tasks)
-        await self.client.close()
-        return results
+        return await asyncio.gather(*tasks)

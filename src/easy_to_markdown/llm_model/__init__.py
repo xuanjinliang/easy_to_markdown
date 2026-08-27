@@ -22,9 +22,9 @@ class APIModelConfig(BaseModel):
     base_url: str = ""
     api_key: str = ""
     max_output_tokens: int = 8192
-    thinking_budget: int = 5000
+    thinking_budget: int = 0
     temperature: int = 1
-    reasoning_effort: str = "medium"
+    reasoning_effort: str | None = None
     max_retry: int = 3
     model_client_stream: bool = True
     parallel_tool_calls: bool = True
