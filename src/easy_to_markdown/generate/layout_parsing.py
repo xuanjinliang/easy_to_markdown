@@ -491,7 +491,7 @@ class LayoutParsing:
         ]
 
         loop = asyncio.get_running_loop()
-        async with self.infer_semaphore:
+        async with self.pipeline_lock:
             results = await loop.run_in_executor(
                 self.executor,
                 self.ocr_inference,
