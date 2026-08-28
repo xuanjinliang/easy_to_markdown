@@ -20,15 +20,27 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         image_path = os.path.join(
             pkg.PdfTempDir,
             "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
-            "llm_crops_img",
-            "page_1",
-            "19_text.webp"
+            "crops_img",
+            "page_2",
+            "4_table",
+            "table_crop",
+            "row_8_1.webp"
         )
         ocr_content = OCRContent(
             content=[
-                "吴原",
-                "Name:"
-            ],
+                      "Internet Data Transfer Out in the following",
+                      "Service-Specific Regions:",
+                      "US East (N. Virginia)",
+                      "$0.0225 per GB",
+                      "US East (Ohio)",
+                      "$0.0225 per GB",
+                      "US West (N. California)",
+                      "$0.0225 per GB",
+                      "US West (Oregon)",
+                      "$0.0225 per GB",
+                      "Canada (Central)",
+                      "$0.0225 per GB"
+                    ],
         )
         prompt = llm_model.set_ocr_content_prompt(ocr_content)
         if prompt is None:

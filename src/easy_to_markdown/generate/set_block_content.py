@@ -36,8 +36,8 @@ class SetBlockContent:
         if not isinstance(content, list) or len(content) <= 0:
             return None
 
-        str_content = "\n\n".join(content).replace("𫊸", "")
-        return f"<ocr_content>\n{str_content}\n</ocr_content>"
+        str_content = f'<ocr_text>{"</ocr_text><ocr_text>".join(content).replace("𫊸", "")}</ocr_text>'
+        return f"<ocr_content>{str_content}</ocr_content>"
 
     def set_message(self, prompt: str, image_list: list[str], system_info_type: int) -> list[dict[str, Any]]:
         system_info = self.set_system_info(system_info_type)
@@ -51,9 +51,7 @@ class SetBlockContent:
             if result.content is None:
                 result.content = ""
             else:
-                result.content = (result.content.
-                                  replace("<empty/>", "").
-                                  replace("<ocr_content>", "").
-                                  replace("</ocr_content>", ""))
+                for s in ["<empty/>", "<ocr_content>", "</ocr_content>", "<ocr_text>", "</ocr_text>"]:
+                    result.content = result.content.replace(s, "")
 
         return results

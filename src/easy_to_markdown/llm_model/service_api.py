@@ -186,15 +186,23 @@ class LLMServiceApi(LocalModelInterface):
 
         if images is not None and len(images) > 0:
             for image in images:
-                image_bytes = get_file(image)
-                image_type = get_image_extension(image_bytes)
-                image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
+                # image_bytes = get_file(image)
+                # image_type = get_image_extension(image_bytes)
+                # image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+                #
+                # content.append(
+                #     {
+                #         "type": "image_url",
+                #         "image_url": {
+                #             "url": f"data:image/{image_type};base64,{image_base64}",
+                #         }
+                #     }
+                # )
                 content.append(
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/{image_type};base64,{image_base64}",
+                            "url": image,
                         }
                     }
                 )
@@ -228,6 +236,11 @@ class LLMServiceApi(LocalModelInterface):
                     if (results.success and
                             isinstance(results.result, ModelInfo) and
                             len(results.result.content) > 0):
+
+                        if results.result.content == "<empty/>":
+                            logger.info(f"results.result.content.len-->{len(results.result.content)}")
+                            logger.info(f"results.result.content-->{results.result.content}")
+
                         return results
                 except Exception as e:
                     logger.error(e)

@@ -347,7 +347,7 @@ class LayoutParsing:
             x1, y1, x2, y2 = block.block_bbox
 
             copy_img = img
-            for p, output_path in [(padding, ocr_output_dir), (50, llm_output_dir)]:
+            for p, output_path in [(padding, ocr_output_dir), (30, llm_output_dir)]:
                 if output_path == llm_output_dir:
                     if block.block_label_type in ['image', 'table']:
                         continue
@@ -522,7 +522,7 @@ class LayoutParsing:
 
         if len(columns_info_list) > 0:
             tasks = []
-            for batch in chunk_list(columns_info_list, 5):
+            for batch in chunk_list(columns_info_list, 4):
                 task = asyncio.create_task(self.ocr_table_info_cell(batch))
                 tasks.append(task)
 
@@ -594,7 +594,7 @@ class LayoutParsing:
     async def ocr_handel_file_parsing(self, file_parsing_result: FileParsingResult) -> FileParsingResult:
         blocks = file_parsing_result.blocks
         tasks = []
-        for batch in chunk_list(blocks, 5):
+        for batch in chunk_list(blocks, 4):
             task = asyncio.create_task(self.ocr_handle_item(batch))
             tasks.append(task)
 
@@ -610,7 +610,7 @@ class LayoutParsing:
 
         tasks = []
 
-        for batch in chunk_list(image_list):
+        for batch in chunk_list(image_list, 4):
             task = asyncio.create_task(self.layout_handle_item(batch, output_dir))
             tasks.append(task)
 
