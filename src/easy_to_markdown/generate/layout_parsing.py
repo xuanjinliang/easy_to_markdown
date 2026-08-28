@@ -35,7 +35,7 @@ class ParsingInfo(BaseModel):
     device: Literal["cpu", "cuda:0"] = "cpu"
     llm_conf: APIModelConfig
     conf: float = Field(default=0.25, gt=0, le=1)
-    padding: int = 12
+    padding: int = 5
     max_workers: int = Field(default=4, ge=1)
     max_retry: int = 3
     font_scale: float = 0.6

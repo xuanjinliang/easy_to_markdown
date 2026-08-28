@@ -19,16 +19,15 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
 
         image_path = os.path.join(
             pkg.PdfTempDir,
-            "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
-            "crops_img",
-            "page_4",
-            "2_table",
-            "table_crop",
-            "row_1_0.webp"
+            "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+            "llm_crops_img",
+            "page_1",
+            "19_text.webp"
         )
         ocr_content = OCRContent(
             content=[
-                "xx"
+                "吴原",
+                "Name:"
             ],
         )
         prompt = llm_model.set_ocr_content_prompt(ocr_content)
