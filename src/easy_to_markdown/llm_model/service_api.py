@@ -229,9 +229,9 @@ class LLMServiceApi(LocalModelInterface):
                             isinstance(results.result, ModelInfo) and
                             len(results.result.content) > 0):
 
-                        if results.result.content == "<empty/>":
-                            logger.info(f"results.result.content.len-->{len(results.result.content)}")
-                            logger.info(f"results.result.content-->{results.result.content}")
+                        # if results.result.content == "<empty/>":
+                        #     logger.info(f"results.result.content.len-->{len(results.result.content)}")
+                        #     logger.info(f"results.result.content-->{results.result.content}")
 
                         return results
                 except Exception as e:
