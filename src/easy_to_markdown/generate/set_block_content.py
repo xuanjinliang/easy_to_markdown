@@ -51,6 +51,9 @@ class SetBlockContent:
             if result.content is None:
                 result.content = ""
             else:
-                result.content = result.content.replace("<ocr_content>", "").replace("</ocr_content>", "")
+                result.content = (result.content.
+                                  replace("<empty/>", "").
+                                  replace("<ocr_content>", "").
+                                  replace("</ocr_content>", ""))
 
         return results

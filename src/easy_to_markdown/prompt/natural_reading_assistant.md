@@ -22,7 +22,10 @@ You will receive:
 
 # Processing Steps
 
-1. If the content contains no text, return an empty string.
+1. If the content contains no text, **must return**:
+   ```text
+      <empty/>
+   ```
 2. Determine the natural reading order of the text content.
 3. Determine whether the **line breaks** in the text are meaningful. If multiple consecutive text segments belong to the same sentence, phrase, or text block, merge them into a single line.
 

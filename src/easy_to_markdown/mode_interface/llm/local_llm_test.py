@@ -12,7 +12,7 @@ class TestPPOcr(unittest.IsolatedAsyncioTestCase):
     model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
 
     async def test_local_llm(self):
-        path_obj = os.path.join(pkg.PromptDir, "doc_understanding_assistant.md")
+        path_obj = os.path.join(pkg.PromptDir, "doc_assistant.md")
         system_info = Path(path_obj).read_text(encoding="utf-8")
 
         file_dir = os.path.join(pkg.PdfTempDir, "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159")

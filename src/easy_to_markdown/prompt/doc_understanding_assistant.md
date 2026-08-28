@@ -32,7 +32,10 @@ Strictly follow the steps below:
         [AAABBB CCC. DDD]
      ```
 
-2. If there is no text inside the **red border**, simply return an empty string.
+2. If there is no text inside the **red border**, return:
+   ```text
+      <empty/>
+   ```
 
 3. Check whether any text inside the **red border** extends beyond the red border.
    - **If yes**, only correct the text **inside the red border**.

@@ -26,7 +26,10 @@ You will receive:
    - If there is a red border, output the content **inside the red border**.
    - If there is no red border, output an empty string.
 
-2. If there is **no text inside the red border**, return an empty string.
+2. If there is **no text inside the red border**, **must return**:
+   ```text
+      <empty/>
+   ```
 
 3. If the text **inside the red border** cannot be recognized from the image, refer to the content in **ocr_content**.
 

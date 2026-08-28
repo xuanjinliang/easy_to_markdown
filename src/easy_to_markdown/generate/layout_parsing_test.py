@@ -4,9 +4,14 @@ from easy_to_markdown import pkg
 import json
 import re
 from easy_to_markdown.pkg.pdf_to_image import ImageResponse
-from easy_to_markdown.generate.layout_parsing import ParsingInfo, LayoutParsing
+from easy_to_markdown.generate.layout_parsing import ParsingInfo, LayoutParsing, logger
 from pathlib import Path
 from easy_to_markdown.llm_model import APIModelConfig
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):

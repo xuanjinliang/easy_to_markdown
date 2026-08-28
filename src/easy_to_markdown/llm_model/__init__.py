@@ -41,6 +41,7 @@ class ModelInfo(BaseModel):
     output_tokens: int = 0
     model_version: str = ""
     content: Any = None
+    retry: int = 1
 
 
 class AdvancedOCRVL(BaseModel):

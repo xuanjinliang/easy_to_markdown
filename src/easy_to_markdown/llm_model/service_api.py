@@ -1,4 +1,5 @@
 import asyncio
+import base64
 from pathlib import Path
 from easy_to_markdown.llm_model import APIModelConfig, TextFormat
 from easy_to_markdown.llm_model.interface import LocalModelInterface
@@ -9,6 +10,8 @@ from typing import Any, Optional
 from easy_to_markdown.llm_model import ModelInfo
 from easy_to_markdown.pkg.merge import deep_merge
 from easy_to_markdown.pkg.result import Result
+from easy_to_markdown.pkg.files_handle import get_file
+from easy_to_markdown.pkg.image_handle import get_image_extension
 
 import logging
 from logging import NullHandler
@@ -32,7 +35,8 @@ class OpenAPIWorker:
     def __init__(self, config: APIModelConfig):
         self.client = AsyncOpenAI(
             api_key=config.api_key,
-            base_url=config.base_url
+            base_url=config.base_url,
+            max_retries=config.max_retry
         )
 
         self.default_config = config
@@ -94,7 +98,10 @@ class OpenAPIWorker:
         )
         return self.set_llm_config(config=merged)
 
-    async def inference(self, messages: list[dict[str, Any]], config: APIModelConfig | None = None) -> Result:
+    async def inference(self,
+                        messages: list[dict[str, Any]],
+                        config: APIModelConfig | None = None,
+                        retry:int = 1) -> Result:
 
         llm_config = self.llm_config
         if config is not None:
@@ -102,11 +109,11 @@ class OpenAPIWorker:
 
         model_version = Path(llm_config.model_id).name
         result = ModelInfo(
-            model_version=model_version
+            model_version=model_version,
+            retry=retry,
         )
 
         try:
-
             params = {
                 "model": llm_config.model_id,
                 "messages": messages,
@@ -156,7 +163,7 @@ class OpenAPIWorker:
 
             logger.info(f"reasoning_content:{reasoning_content}")
 
-            result.content = answer_content
+            result.content = answer_content.strip()
             result.input_tokens = input_tokens
             result.output_tokens = output_tokens
 
@@ -172,17 +179,22 @@ class LLMServiceApi(LocalModelInterface):
     def __init__(self, config: APIModelConfig):
         self.client = OpenAPIWorker(config=config)
         self.infer_semaphore = asyncio.Semaphore(config.workers)
+        self.max_retry = config.max_retry
 
     def preprocess_image(self, prompt: str | None = None, images: list[str] | None = None) -> list[dict[str, Any]]:
         content = []
 
         if images is not None and len(images) > 0:
             for image in images:
+                image_bytes = get_file(image)
+                image_type = get_image_extension(image_bytes)
+                image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
                 content.append(
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": image
+                            "url": f"data:image/{image_type};base64,{image_base64}",
                         }
                     }
                 )
@@ -209,9 +221,20 @@ class LLMServiceApi(LocalModelInterface):
             )
 
         async with self.infer_semaphore:
-            results = await self.client.inference(message, config=config)
+            exec_num = 1
+            while exec_num <= self.max_retry:
+                try:
+                    results = await self.client.inference(message, config=config, retry=exec_num)
+                    if (results.success and
+                            isinstance(results.result, ModelInfo) and
+                            len(results.result.content) > 0):
+                        return results
+                except Exception as e:
+                    logger.error(e)
+                finally:
+                    exec_num += 1
 
-        return results
+            return results
 
     async def request_vllm(self,
                            messages: list[list[dict[str, Any]]],
@@ -225,7 +248,10 @@ class LLMServiceApi(LocalModelInterface):
             task = asyncio.create_task(self.handle_item(message, schema))
             tasks.append(task)
 
-        results = await asyncio.gather(*tasks)
-        await self.client.close()
+        return await asyncio.gather(*tasks)
 
-        return results
+    async def close_vllm(self):
+        try:
+            await self.client.close()
+        except Exception as e:
+            logger.error(e)
