@@ -1,4 +1,5 @@
 from typing import Any
+from pydantic import BaseModel
 from easy_to_markdown.llm_model import ModelInfo
 from easy_to_markdown.llm_model import APIModelConfig
 from easy_to_markdown.llm_model.service_api import LLMServiceApi
@@ -18,8 +19,10 @@ class LocalLLM:
 
         return input_prompt
 
-    async def predict(self, messages: list[list[dict[str, Any]]]) -> list[ModelInfo]:
-        results = await self.llm_model.request_vllm(messages=messages)
+    async def predict(self,
+                      messages: list[list[dict[str, Any]]],
+                      schema: type[BaseModel] | None = None) -> list[ModelInfo]:
+        results = await self.llm_model.request_vllm(messages=messages, schema=schema)
 
         return [
             item.result if item.success else ModelInfo()

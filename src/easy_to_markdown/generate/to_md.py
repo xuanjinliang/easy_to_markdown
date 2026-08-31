@@ -14,13 +14,15 @@ class MarkdownWriter:
                  ignore_labels: list[str] | None = None,
                  ignore_header: bool = True,
                  ignore_footer: bool = True):
-        self.ignore_labels = [] if ignore_labels is None else ignore_labels
+
+        ignore_labels = [] if ignore_labels is None else ignore_labels
+        if ignore_header:
+            ignore_labels += [BlockType.HEADER, BlockType.HEADER_IMAGE]
+
         self.ignore_footer_label = [BlockType.FOOTER, BlockType.FOOTER_IMAGE,
                                     BlockType.FOOTNOTE] if ignore_footer else []
 
-        if ignore_header:
-            self.ignore_labels += [BlockType.HEADER, BlockType.HEADER_IMAGE]
-
+        self.ignore_labels = list(dict.fromkeys(ignore_labels))
         self.md_file = open(file_path, mode, encoding="utf-8")
 
     def write(self, markdown_info: MarkdownInfo):

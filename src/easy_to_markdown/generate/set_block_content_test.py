@@ -1,9 +1,15 @@
 import unittest
 import os
+from pydantic import BaseModel
 from easy_to_markdown import pkg
 from easy_to_markdown.generate.set_block_content import SetBlockContent
 from easy_to_markdown.llm_model import APIModelConfig
 from ocr import OCRContent
+
+
+class Description(BaseModel):
+    truncated: bool
+    reason: str
 
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):
@@ -26,7 +32,7 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         )
         ocr_content = OCRContent(
             content=[
-                "奚原",
+                "JinJin",
                 "By:",
             ],
         )
@@ -70,6 +76,6 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             image_list=[image_path1, image_path2],
             system_info_type=2
         )
-        results = await llm_model.predict(messages=[message])
+        results = await llm_model.predict(messages=[message], schema=Description)
         print(results[0].content)
         print(results[0])

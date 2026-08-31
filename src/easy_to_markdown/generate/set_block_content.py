@@ -1,4 +1,5 @@
 import os
+from pydantic import BaseModel
 from easy_to_markdown import pkg
 from typing import Any
 from pathlib import Path
@@ -44,8 +45,10 @@ class SetBlockContent:
         return self.local_llm.set_message(
             prompt=prompt, image_list=image_list, system_info=system_info)
 
-    async def predict(self, messages: list[list[dict[str, Any]]]) -> list[ModelInfo]:
-        results = await self.local_llm.predict(messages=messages)
+    async def predict(self,
+                      messages: list[list[dict[str, Any]]],
+                      schema: type[BaseModel] | None = None) -> list[ModelInfo]:
+        results = await self.local_llm.predict(messages=messages, schema=schema)
 
         for result in results:
             if result.content is None:
