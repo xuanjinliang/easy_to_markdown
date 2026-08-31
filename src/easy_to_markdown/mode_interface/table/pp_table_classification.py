@@ -50,7 +50,7 @@ class PPTableClassification:
             return []
 
         table_info_list: list[list[dict[str, Any]]] = []
-        for i, result in enumerate(results):
+        for result in results:
             boxes = [] if result is None else result.get('boxes', [])
             table_info_list.append(boxes)
 
@@ -122,6 +122,7 @@ class PPTableClassification:
         for img_list in chunk_list(img_list_pos):
             pred = self.model.predict(
                 input=img_list,
+                batch_size=1
             )
             results += pred
 

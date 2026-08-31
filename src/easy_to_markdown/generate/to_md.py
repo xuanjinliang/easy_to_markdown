@@ -13,7 +13,12 @@ class MarkdownWriter:
     def __init__(self, file_path: str, mode: str = "w",
                  ignore_labels: list[str] | None = None,
                  ignore_header: bool = True,
-                 ignore_footer: bool = True):
+                 ignore_footer: bool = True,
+                 is_merge: bool = True):
+
+        if is_merge:
+            ignore_header = True
+            ignore_footer = True
 
         ignore_labels = [] if ignore_labels is None else ignore_labels
         if ignore_header:

@@ -84,6 +84,7 @@ class TableCellCategory(BaseModel):
     category_type: Literal["formula", "text", "unknown"]
     parsing_result: FileParsingResult | None = None
 
+
 class MarkdownInfo(BaseModel):
     block_id: int = Field(ge=0)
     block_label: str
@@ -92,9 +93,11 @@ class MarkdownInfo(BaseModel):
     level: int = 0
     block_content: str = ""
     block_image_content: Optional[str] = Field(default=None)
+    merge_position: list[tuple[int, int]] = []
 
 
 class MarkdownFileResult(BaseModel):
     img_info: ImageResponse
     page: int = 1
     children: list[MarkdownInfo] = []
+    merge_page: list[int] = []

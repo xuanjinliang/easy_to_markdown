@@ -253,13 +253,11 @@ class LayoutParsing:
         img_path_list: list[ImageResponse] = []
         for i, rows in enumerate(table_info.table_list):
             for j, columns in enumerate(rows.rows_list):
-                row_and_col_pos.append((i, j))
-
                 crop_info = columns.crop_info
-
                 if crop_info is None:
                     continue
 
+                row_and_col_pos.append((i, j))
                 img_path_list.append(ImageResponse(
                     image_path=crop_info.image_path,
                     width=crop_info.width,

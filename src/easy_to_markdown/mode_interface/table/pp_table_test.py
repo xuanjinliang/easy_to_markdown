@@ -8,7 +8,7 @@ from easy_to_markdown.mode_interface.table.pp_table_classification import PPTabl
 
 class TestPPTable(unittest.TestCase):
     def test_table_classification(self):
-        file_dir = os.path.join(pkg.PdfTempDir, "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c")
+        file_dir = os.path.join(pkg.PdfTempDir, "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159")
         with open(os.path.join(file_dir, "layout_result.json"), "r", encoding="utf-8") as f:
             data = json.load(f)
 
