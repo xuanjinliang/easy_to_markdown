@@ -22,6 +22,9 @@ class LocalLLM:
     async def predict(self,
                       messages: list[list[dict[str, Any]]],
                       schema: type[BaseModel] | None = None) -> list[ModelInfo]:
+        if not messages:
+            return []
+
         results = await self.llm_model.request_vllm(messages=messages, schema=schema)
 
         return [

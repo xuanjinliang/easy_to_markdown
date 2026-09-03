@@ -1,4 +1,3 @@
-from paddleocr import TableClassification
 from paddleocr import TableCellsDetection
 from typing import Literal, Any
 import os
@@ -9,40 +8,29 @@ from easy_to_markdown.mode_interface.table import TablePosition
 from paddlex.inference.models.image_classification.result import TopkResult
 from paddlex.inference.models.object_detection.result import DetResult
 from easy_to_markdown.pkg.coordinate_overlap import get_overlap_result_np
+from easy_to_markdown.mode_interface.table.table_classification import PPTableClassification, LLMTableClassification
+from easy_to_markdown.llm_model import APIModelConfig
 
 
-class PPTableClassification:
-    def __init__(self, device: Literal["cpu", "gpu:0"] = "cpu", conf=0.3):
+class TableStructureRecognition:
+    def __init__(self,
+                 device: Literal["cpu", "gpu:0"] = "cpu",
+                 conf=0.3,
+                 llm_conf: APIModelConfig | None = None):
         model_path = os.path.join(pkg.ModelDir, "paddle", "PP-LCNet_x1_0_table_cls")
         model_path_wireless = os.path.join(pkg.ModelDir, "paddle", "RT-DETR-L_wireless_table_cell_det")
         model_path_wired = os.path.join(pkg.ModelDir, "paddle", "RT-DETR-L_wired_table_cell_det")
 
         ensure_dir([model_path, model_path_wireless, model_path_wired])
 
-        self.model = TableClassification(
-            model_name="PP-LCNet_x1_0_table_cls",
-            model_dir=model_path,
-            device=device,
-        )
+        self.table_classification = PPTableClassification(device=device)
+        if llm_conf is not None:
+            self.table_classification = LLMTableClassification(config=llm_conf)
 
         self.model_path_wireless = model_path_wireless
         self.model_path_wired = model_path_wired
         self.device = device
         self.conf = conf
-
-    @staticmethod
-    def process_item(result: TopkResult) -> str | None:
-        label_list = result.get('label_names', [])
-        score_list = result.get('scores', 0)
-
-        max_score = 0
-        label = None
-        for i, item in enumerate(label_list):
-            if label is None or score_list[i] > max_score:
-                max_score = score_list[i]
-                label = item
-
-        return label
 
     @staticmethod
     def wired_process_item(results: list[DetResult], img_path_list: list[str]) -> list[list[dict[str, Any]]]:
@@ -100,7 +88,7 @@ class PPTableClassification:
 
         return self.wired_process_item(results=results, img_path_list=img_list)
 
-    def format(self, file_parsing_result: list[FileParsingResult]) -> list[TablePosition]:
+    async def format(self, file_parsing_result: list[FileParsingResult]) -> list[TablePosition]:
         if len(file_parsing_result) == 0:
             return []
 
@@ -118,19 +106,7 @@ class PPTableClassification:
                     table_list_pos.append(set_info)
                     img_list_pos.append(block.crop_path)
 
-        results: list[TopkResult] = []
-        for img_list in chunk_list(img_list_pos):
-            pred = self.model.predict(
-                input=img_list,
-                batch_size=1
-            )
-            results += pred
-
-        parsing_info_list = [
-            self.process_item(result=result)
-            for result in results
-        ]
-
+        parsing_info_list = await self.table_classification.predict(img_list_pos)
         wireless_list: list[TablePosition] = []
         wireless_img_list: list[str] = []
         wired_list: list[TablePosition] = []

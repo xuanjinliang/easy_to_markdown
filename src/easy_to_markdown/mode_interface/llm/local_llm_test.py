@@ -11,6 +11,27 @@ from easy_to_markdown.llm_model import APIModelConfig
 class TestPPOcr(unittest.IsolatedAsyncioTestCase):
     model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
 
+    async def test_table_classification(self):
+        path_obj = os.path.join(pkg.PromptDir, "table_classification.md")
+        system_info = Path(path_obj).read_text(encoding="utf-8")
+
+        dir_path = Path(os.path.join(pkg.PdfTempDir, 'aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159', 'crops_img'))
+        image_path = os.path.join(dir_path,
+                                  'page_3',
+                                  "3_table.webp"
+                                  )
+
+        local_llm = LocalLLM(config=APIModelConfig(
+            model=self.model_path,
+            temperature=0,
+            base_url="http://localhost:8777/v1",
+            api_key="not-needed"
+        ))
+
+        message = local_llm.set_message(prompt=system_info, image_list=[image_path])
+        results = await local_llm.predict(messages=[message])
+        print(results)
+
     async def test_local_llm(self):
         path_obj = os.path.join(pkg.PromptDir, "doc_assistant.md")
         system_info = Path(path_obj).read_text(encoding="utf-8")

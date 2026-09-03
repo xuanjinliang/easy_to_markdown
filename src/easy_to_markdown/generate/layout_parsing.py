@@ -21,7 +21,7 @@ from typing import Optional
 from easy_to_markdown.mode_interface.table import TablePosition
 from src.easy_to_markdown.generate.table_cell_position import clean_cell_detections, table_cell_category
 from easy_to_markdown.generate.table_cell_content import TableCellOCRContent
-from easy_to_markdown.mode_interface.table.pp_table_classification import PPTableClassification
+from easy_to_markdown.mode_interface.table.table_structure_recognition import TableStructureRecognition
 from easy_to_markdown.mode_interface.ocr import pp_ocr, OCRContent
 import logging
 from logging import NullHandler
@@ -298,7 +298,7 @@ class LayoutParsing:
         if not file_parsing_result:
             return file_parsing_result
 
-        table_classification = PPTableClassification()
+        table_classification = TableStructureRecognition()
         list_table_position = table_classification.format(file_parsing_result)
 
         if len(list_table_position) <= 0:
