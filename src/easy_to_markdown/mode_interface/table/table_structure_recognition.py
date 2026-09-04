@@ -5,7 +5,6 @@ from easy_to_markdown import pkg
 from easy_to_markdown.pkg.common import ensure_dir, chunk_list
 from easy_to_markdown.generate import FileParsingResult
 from easy_to_markdown.mode_interface.table import TablePosition
-from paddlex.inference.models.image_classification.result import TopkResult
 from paddlex.inference.models.object_detection.result import DetResult
 from easy_to_markdown.pkg.coordinate_overlap import get_overlap_result_np
 from easy_to_markdown.mode_interface.table.table_classification import PPTableClassification, LLMTableClassification

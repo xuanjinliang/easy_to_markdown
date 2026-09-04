@@ -33,7 +33,7 @@ logger.addHandler(NullHandler())
 class ParsingInfo(BaseModel):
     image_list: list[ImageResponse]
     device: Literal["cpu", "cuda:0"] = "cpu"
-    llm_conf: APIModelConfig
+    llm_conf: APIModelConfig | None
     conf: float = Field(default=0.25, gt=0, le=1)
     padding: int = 5
     max_workers: int = Field(default=4, ge=1)
@@ -65,8 +65,10 @@ class LayoutParsing:
         # self.ocr_model = pp_ocr.PPOcrVl(device=parsing_info.device)
         self.ocr_model = pp_ocr.PPOcr(device=parsing_info.device)
 
+        self.llm_conf = parsing_info.llm_conf
         # llm
-        self.llm_model = SetBlockContent(llm_conf=parsing_info.llm_conf)
+        if parsing_info.llm_conf is not None:
+            self.llm_model = SetBlockContent(llm_conf=parsing_info.llm_conf)
 
     async def set_table_content(self, table_info: TableInfo) -> TableInfo:
         messages = []
@@ -298,8 +300,8 @@ class LayoutParsing:
         if not file_parsing_result:
             return file_parsing_result
 
-        table_classification = TableStructureRecognition()
-        list_table_position = table_classification.format(file_parsing_result)
+        table_structure_recognition = TableStructureRecognition(llm_conf=self.llm_conf)
+        list_table_position = await table_structure_recognition.format(file_parsing_result)
 
         if len(list_table_position) <= 0:
             return file_parsing_result
