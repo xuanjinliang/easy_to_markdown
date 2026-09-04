@@ -95,18 +95,43 @@ class MarkdownJsonWriter:
 
         return markdown_info
 
-    def set_table_content(self, table_info: TableInfo) -> str:
+    def set_only_table_cell(self, table_info: TableInfo) -> list[list[TableCell]]:
         if len(table_info.table_list) == 0:
-            return ""
+            return []
 
-        table = Table(width=table_info.width, height=table_info.height)
-
+        rows_list = []
         for rows in table_info.table_list:
             table_cell = []
+            table_rows_extra = []
             for cell in rows.rows_list:
                 if cell.columns_blocks is not None:
                     blocks = cell.columns_blocks.blocks
                     content = ""
+
+                    if len(blocks) == 1 and blocks[0].block_label_type == "table":
+                        cell_table_info = blocks[0].table_info
+                        if cell_table_info is not None:
+                            row_cell_list = self.set_only_table_cell(table_info=cell_table_info)
+
+                            last_bbox = None
+                            if len(table_cell) > 0:
+                                last_bbox = table_cell[-1].bbox
+
+                            if last_bbox is not None:
+                                for rows_i in row_cell_list:
+                                    for cell in rows_i:
+                                        bbox = cell.bbox
+                                        bbox[0] += last_bbox[2]
+                                        bbox[2] += last_bbox[2]
+                                        bbox[1] += last_bbox[1]
+                                        bbox[3] += last_bbox[1]
+                                        cell.bbox = bbox
+
+                            if len(row_cell_list) > 0:
+                                table_cell += row_cell_list[0]
+                                table_rows_extra.append(row_cell_list[1:])
+                            continue
+
                     for block in blocks:
                         markdown_info = self.set_content(block)
                         content += markdown_info.block_content
@@ -117,7 +142,24 @@ class MarkdownJsonWriter:
                 table_cell.append(TableCell(text=content, bbox=cell.bbox))
 
             if len(table_cell) > 0:
-                table.add_row(cells=table_cell)
+                rows_list.append(table_cell)
+
+            if len(table_rows_extra) > 0:
+                for item_list in table_rows_extra:
+                    for row in item_list:
+                        rows_list.append(row)
+
+        return rows_list
+
+    def set_table_content(self, table_info: TableInfo) -> str:
+        if len(table_info.table_list) == 0:
+            return ""
+
+        table = Table(width=table_info.width, height=table_info.height)
+
+        rows_list = self.set_only_table_cell(table_info)
+        for table_cell in rows_list:
+            table.add_row(cells=table_cell)
 
         table.calculate_spans(tolerance=self.tolerance)
         return table.to_html() + "\n\n"
