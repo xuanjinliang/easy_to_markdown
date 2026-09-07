@@ -114,6 +114,7 @@ class TableStructureRecognition:
         for i, item in enumerate(parsing_info_list):
             if item is None:
                 continue
+
             table_list_pos[i].table_model.append(item)
             crop_path = table_list_pos[i].crop_path
 

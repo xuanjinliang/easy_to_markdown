@@ -2,7 +2,7 @@ from typing import Literal, Any
 import os
 import asyncio
 from pathlib import Path
-from easy_to_markdown.mode_interface.table import TableClassificationInterface
+from easy_to_markdown.mode_interface.table import TableClassificationInterface, TablePosition
 from paddlex.inference.models.image_classification.result import TopkResult
 import easy_to_markdown.pkg as pkg
 from paddleocr import TableClassification
@@ -76,7 +76,12 @@ class LLMTableClassification(TableClassificationInterface):
 
         llm_results = await self.llm_model.request_vllm(messages=input_prompt)
 
-        return [
-            item.result.content if item.success else None
-            for item in llm_results
-        ]
+        list_results = []
+        targets = ['wired_table', 'wireless_table']
+        for item in llm_results:
+            if item.success and isinstance(item.result.content, str):
+                list_results.append(next((x for x in targets if x in item.result.content), None))
+            else:
+                list_results.append(None)
+
+        return list_results
