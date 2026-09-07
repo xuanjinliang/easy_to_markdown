@@ -11,7 +11,7 @@ You will receive:
 
 The two images are different regions of the **same document**.
 
-# Procedure
+## Procedure
 
 1. Ignore all **headers** and **footers** in the images. Focus only on the main body content.
 
@@ -34,7 +34,7 @@ The two images are different regions of the **same document**.
     This is a long sentence that continues on the next image.
     ````
 
-# Output
+## Output
 
 1. If the content between **Image 1** and **Image 2** is **truncated**, output `true`.
 
