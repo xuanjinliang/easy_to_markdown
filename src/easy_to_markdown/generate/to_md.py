@@ -10,9 +10,8 @@ from easy_to_markdown.generate import (FileParsingResult, ParsingResult, Markdow
 
 
 class MarkdownWriter:
-    def __init__(self, file_path: str, mode: str = "w"):
-
-        self.md_file = open(file_path, mode, encoding="utf-8")
+    def __init__(self, file_path: str):
+        self.md_file = open(file_path, "w", encoding="utf-8")
 
     def write(self, markdown_info: MarkdownInfo):
         content = markdown_info.block_image_content if (
@@ -45,8 +44,7 @@ class MarkdownJsonWriter:
                  ignore_labels: list[str] | None = None,
                  ignore_header: bool = True,
                  ignore_footer: bool = True,
-                 is_merge: bool = True
-                 ):
+                 is_merge: bool = True):
         self.output_dir = output_dir
         ensure_dir(output_dir)
 
