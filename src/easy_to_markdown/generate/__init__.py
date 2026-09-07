@@ -97,7 +97,5 @@ class MarkdownInfo(BaseModel):
 
 
 class MarkdownFileResult(BaseModel):
-    img_info: ImageResponse
-    page: int = 1
-    children: list[MarkdownInfo] = []
-    merge_page: list[int] = []
+    img_info: list[ImageResponse] = []
+    children: list[list[MarkdownInfo]] = []

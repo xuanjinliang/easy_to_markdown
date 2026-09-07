@@ -19,7 +19,7 @@ class ToMarkdown(unittest.TestCase):
         md_json_info = md_json_writer.run(file_parsing_result_list)
         print(md_json_info)
 
-        json_data = [r.model_dump() for r in md_json_info]
+        json_data = md_json_info.model_dump()
         json_str = json.dumps(
             json_data,
             ensure_ascii=False,
@@ -40,7 +40,7 @@ class ToMarkdown(unittest.TestCase):
         md_json_info = md_json_writer.run(file_parsing_result_list)
         print(md_json_info)
 
-        json_data = [r.model_dump() for r in md_json_info]
+        json_data = md_json_info.model_dump()
         json_str = json.dumps(
             json_data,
             ensure_ascii=False,
@@ -54,7 +54,7 @@ class ToMarkdown(unittest.TestCase):
         with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        list_markdown_file_result = [MarkdownFileResult.model_validate(item) for item in data]
+        markdown_file_result = MarkdownFileResult.model_validate(data)
 
         with MarkdownWriter(
                 file_path=os.path.join(pkg.MDDir, "md_result.md"),
@@ -66,5 +66,6 @@ class ToMarkdown(unittest.TestCase):
                     BlockType.FOOTNOTE
                 ]
         ) as md_writer:
-            for file_result in list_markdown_file_result:
-                md_writer.write_list(file_result.children)
+            for file_result in markdown_file_result.children:
+                md_writer.write_list(file_result)
+

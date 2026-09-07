@@ -101,7 +101,7 @@ class MarkdownJsonWriter:
 
         rows_list = []
         for rows in table_info.table_list:
-            table_cell = []
+            table_cell: list[TableCell] = []
             table_rows_extra = []
             for cell in rows.rows_list:
                 if cell.columns_blocks is not None:
@@ -117,7 +117,7 @@ class MarkdownJsonWriter:
                             if len(table_cell) > 0:
                                 last_bbox = table_cell[-1].bbox
 
-                            if last_bbox is not None:
+                            if last_bbox is not None and len(last_bbox) == 4:
                                 for rows_i in row_cell_list:
                                     for cell in rows_i:
                                         bbox = cell.bbox
@@ -192,15 +192,14 @@ class MarkdownJsonWriter:
 
         return blocks_info_list
 
-    def run(self, file_parsing_data: list[FileParsingResult]) -> list[MarkdownFileResult]:
-        markdown_file_list: list[MarkdownFileResult] = []
+    def run(self, file_parsing_data: list[FileParsingResult]) -> MarkdownFileResult:
+        img_info = []
+        children = []
         for page_index, file_parsing_result in enumerate(file_parsing_data):
-            markdown_file_info = MarkdownFileResult(
-                img_info=file_parsing_result.img_info,
-                page=(page_index + 1),
-                children=self.generate_blocks(file_parsing_result.blocks)
-            )
+            img_info.append(file_parsing_result.img_info)
+            children.append(self.generate_blocks(file_parsing_result.blocks))
 
-            markdown_file_list.append(markdown_file_info)
-
-        return markdown_file_list
+        return MarkdownFileResult(
+            img_info=img_info,
+            children=children
+        )
