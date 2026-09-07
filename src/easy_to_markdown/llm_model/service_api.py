@@ -22,7 +22,7 @@ logger.addHandler(NullHandler())
 
 class LLMConfig(BaseModel):
     model_id: str
-    temperature: int
+    temperature: float
     max_tokens: int
     stream: bool
     reasoning_effort: Optional[str]
@@ -44,22 +44,14 @@ class OpenAPIWorker:
 
     @staticmethod
     def set_llm_config(config: APIModelConfig) -> LLMConfig:
-        max_output_tokens = config.max_output_tokens if (
-                config.max_output_tokens <= 65535) else 65535
-
-        temperature = 2 if config.temperature > 2 else (
-            0 if config.temperature < 0 else config.temperature)
-
-        reasoning_list: list[str] = ["high", "medium", "low", "minimal"]
-        reasoning_effort = config.reasoning_effort if (
-                config.reasoning_effort is not None and
-                config.reasoning_effort in reasoning_list) else None
+        max_output_tokens = config.max_output_tokens
+        temperature = config.temperature
 
         llm_config = LLMConfig(
             model_id="Qwen3-VL-4B-Instruct-8bit" if config.model is None else config.model,
             temperature=temperature,
             max_tokens=max_output_tokens,
-            reasoning_effort=reasoning_effort,
+            reasoning_effort=config.reasoning_effort,
             stream=config.model_client_stream,
             parallel_tool_calls=config.parallel_tool_calls,
             extra_body={}
@@ -101,7 +93,7 @@ class OpenAPIWorker:
     async def inference(self,
                         messages: list[dict[str, Any]],
                         config: APIModelConfig | None = None,
-                        retry:int = 1) -> Result:
+                        retry: int = 1) -> Result:
 
         llm_config = self.llm_config
         if config is not None:
@@ -228,7 +220,6 @@ class LLMServiceApi(LocalModelInterface):
                     if (results.success and
                             isinstance(results.result, ModelInfo) and
                             len(results.result.content) > 0):
-
                         # if results.result.content == "<empty/>":
                         #     logger.info(f"results.result.content.len-->{len(results.result.content)}")
                         #     logger.info(f"results.result.content-->{results.result.content}")

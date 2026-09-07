@@ -10,6 +10,7 @@ logger.addHandler(NullHandler())
 class TextFormat(BaseModel):
     type: Literal["text", "json_object"] = "text"
 
+
 class LocalModelConfig(BaseModel):
     model_path: str
     max_output_tokens: int = 8192
@@ -21,11 +22,11 @@ class APIModelConfig(BaseModel):
     model: str | None = None
     base_url: str = ""
     api_key: str = ""
-    max_output_tokens: int = 8192
+    max_output_tokens: int = Field(ge=0, le=65535, default=8192)
     thinking_budget: int = 0
-    temperature: int = 1
-    reasoning_effort: str | None = None
-    max_retry: int = 3
+    temperature: float = Field(ge=0, le=2, default=1)
+    reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None = None
+    max_retry: int = Field(default=3, ge=0)
     model_client_stream: bool = True
     parallel_tool_calls: bool = True
     text_format: Union[
@@ -33,7 +34,7 @@ class APIModelConfig(BaseModel):
         Type[BaseModel]
     ] = TextFormat()
     extra_args: dict[str, Any] = Field(default_factory=dict)
-    workers: int = 4
+    workers: int = Field(default=4, ge=1)
 
 
 class ModelInfo(BaseModel):
