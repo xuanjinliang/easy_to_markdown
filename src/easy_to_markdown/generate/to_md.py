@@ -181,14 +181,13 @@ class MarkdownJsonWriter:
         return f'<img src="{image_path}" alt="Image" />\n\n'
 
     def generate_blocks(self, blocks: list[ParsingResult]) -> list[MarkdownInfo]:
-
         blocks_info_list: list[MarkdownInfo] = []
         for block in blocks:
-            if block.remove:
-                continue
-
             if len(self.ignore_footer_label) > 0 and block.block_label in self.ignore_footer_label:
                 break
+
+            if block.remove:
+                continue
 
             md_info = self.set_content(block)
             if md_info is None or (len(md_info.block_content) == 0 and md_info.block_image_content is None):
