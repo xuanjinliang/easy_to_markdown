@@ -53,11 +53,11 @@ class AdvancedOCRVL(BaseModel):
 
 class ClientConfig(BaseModel):
     model: str | None = None
-    max_output_tokens: int = 8192
+    max_output_tokens: int = Field(ge=0, le=65535, default=8192)
     thinking_budget: int = 5000
-    temperature: int = 1
-    reasoning_effort: str = "medium"
-    max_retry: int = 3
+    temperature: float = Field(ge=0, le=2, default=1)
+    reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None = "medium"
+    max_retry: int = Field(default=3, ge=1)
     model_client_stream: bool = True
     parallel_tool_calls: bool = True
     text_format: Union[
@@ -73,16 +73,6 @@ class ModelAdapter:
         temperature = config.temperature
         max_output_tokens = config.max_output_tokens
         thinking_budget = config.thinking_budget
-
-        if max_output_tokens > 65535:
-            max_output_tokens = 65535
-        if max_output_tokens <= 0:
-            max_output_tokens = 8192
-
-        if temperature > 2:
-            temperature = 2
-        elif temperature < 0:
-            temperature = 0
 
         if thinking_budget > 15000:
             thinking_budget = 15000

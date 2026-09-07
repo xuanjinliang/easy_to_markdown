@@ -113,12 +113,12 @@ class QwenOcrDashscope:
 
 class LLMConfig(BaseModel):
     model_id: str
-    temperature: int
+    temperature: float
     max_tokens: int
     stream: bool
     parallel_tool_calls: bool
     extra_body: dict[str, Any]
-    response_format: dict[str, Any] = None
+    response_format: dict[str, Any] | None = None
 
 
 class QwenClient(LLMInterface):
