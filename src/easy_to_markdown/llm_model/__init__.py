@@ -26,7 +26,7 @@ class APIModelConfig(BaseModel):
     thinking_budget: int = 0
     temperature: float = Field(ge=0, le=2, default=1)
     reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None = None
-    max_retry: int = Field(default=3, ge=0)
+    max_retry: int = Field(default=3, ge=1)
     model_client_stream: bool = True
     parallel_tool_calls: bool = True
     text_format: Union[
