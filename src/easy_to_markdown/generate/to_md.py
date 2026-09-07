@@ -10,30 +10,11 @@ from easy_to_markdown.generate import (FileParsingResult, ParsingResult, Markdow
 
 
 class MarkdownWriter:
-    def __init__(self, file_path: str, mode: str = "w",
-                 ignore_labels: list[str] | None = None,
-                 ignore_header: bool = True,
-                 ignore_footer: bool = True,
-                 is_merge: bool = True):
+    def __init__(self, file_path: str, mode: str = "w"):
 
-        if is_merge:
-            ignore_header = True
-            ignore_footer = True
-
-        ignore_labels = [] if ignore_labels is None else ignore_labels
-        if ignore_header:
-            ignore_labels += [BlockType.HEADER, BlockType.HEADER_IMAGE]
-
-        self.ignore_footer_label = [BlockType.FOOTER, BlockType.FOOTER_IMAGE,
-                                    BlockType.FOOTNOTE] if ignore_footer else []
-
-        self.ignore_labels = list(dict.fromkeys(ignore_labels))
         self.md_file = open(file_path, mode, encoding="utf-8")
 
     def write(self, markdown_info: MarkdownInfo):
-        if len(self.ignore_labels) > 0 and markdown_info.block_label in self.ignore_labels:
-            return
-
         content = markdown_info.block_image_content if (
                 markdown_info.block_image_content is not None) else markdown_info.block_content
         self.md_file.write(content)
@@ -44,8 +25,6 @@ class MarkdownWriter:
             return
 
         for markdown_info in list_markdown_info:
-            if len(self.ignore_footer_label) > 0 and markdown_info.block_label in self.ignore_footer_label:
-                break
             self.write(markdown_info)
 
     def close(self):
@@ -60,13 +39,35 @@ class MarkdownWriter:
 
 
 class MarkdownJsonWriter:
-    def __init__(self, output_dir: str, tolerance: float = 5.0):
+    def __init__(self,
+                 output_dir: str,
+                 tolerance: float = 5.0,
+                 ignore_labels: list[str] | None = None,
+                 ignore_header: bool = True,
+                 ignore_footer: bool = True,
+                 is_merge: bool = True
+                 ):
         self.output_dir = output_dir
         ensure_dir(output_dir)
 
         self.tolerance = tolerance
+        if is_merge:
+            ignore_header = True
+            ignore_footer = True
 
-    def set_content(self, block: ParsingResult) -> MarkdownInfo:
+        ignore_labels = [] if ignore_labels is None else ignore_labels
+        if ignore_header:
+            ignore_labels += [BlockType.HEADER, BlockType.HEADER_IMAGE]
+
+        self.ignore_footer_label = [BlockType.FOOTER, BlockType.FOOTER_IMAGE,
+                                    BlockType.FOOTNOTE] if ignore_footer else []
+
+        self.ignore_labels = list(dict.fromkeys(ignore_labels))
+
+    def set_content(self, block: ParsingResult) -> MarkdownInfo | None:
+        if len(self.ignore_labels) > 0 and block.block_label in self.ignore_labels:
+            return None
+
         markdown_info = MarkdownInfo(
             block_id=block.block_id,
             block_label=block.block_label,
@@ -134,7 +135,11 @@ class MarkdownJsonWriter:
 
                     for block in blocks:
                         markdown_info = self.set_content(block)
+                        if markdown_info is None:
+                            continue
+
                         content += markdown_info.block_content
+
                     table_cell.append(TableCell(html=content, bbox=cell.bbox))
                     continue
 
@@ -184,11 +189,14 @@ class MarkdownJsonWriter:
             if block.remove:
                 continue
 
+            if len(self.ignore_footer_label) > 0 and block.block_label in self.ignore_footer_label:
+                break
+
             md_info = self.set_content(block)
-            if len(md_info.block_content) == 0 and md_info.block_image_content is None:
+            if md_info is None or (len(md_info.block_content) == 0 and md_info.block_image_content is None):
                 continue
 
-            blocks_info_list.append(self.set_content(block))
+            blocks_info_list.append(md_info)
 
         return blocks_info_list
 
@@ -200,6 +208,7 @@ class MarkdownJsonWriter:
             children.append(self.generate_blocks(file_parsing_result.blocks))
 
         return MarkdownFileResult(
+            ignore_block_label=list(dict.fromkeys(self.ignore_labels + self.ignore_footer_label)),
             img_info=img_info,
             children=children
         )

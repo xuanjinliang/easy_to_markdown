@@ -97,5 +97,6 @@ class MarkdownInfo(BaseModel):
 
 
 class MarkdownFileResult(BaseModel):
+    ignore_block_label: list[str] = []
     img_info: list[ImageResponse] = []
     children: list[list[MarkdownInfo]] = []

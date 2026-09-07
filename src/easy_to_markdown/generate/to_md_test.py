@@ -36,7 +36,14 @@ class ToMarkdown(unittest.TestCase):
 
         file_parsing_result_list = [FileParsingResult.model_validate(item) for item in data]
 
-        md_json_writer = MarkdownJsonWriter(pkg.MDDir)
+        md_json_writer = MarkdownJsonWriter(pkg.MDDir,
+                                            ignore_labels=[
+                                                BlockType.HEADER,
+                                                BlockType.HEADER_IMAGE,
+                                                BlockType.FOOTER,
+                                                BlockType.FOOTER_IMAGE,
+                                                BlockType.FOOTNOTE
+                                            ])
         md_json_info = md_json_writer.run(file_parsing_result_list)
         print(md_json_info)
 
@@ -56,16 +63,6 @@ class ToMarkdown(unittest.TestCase):
 
         markdown_file_result = MarkdownFileResult.model_validate(data)
 
-        with MarkdownWriter(
-                file_path=os.path.join(pkg.MDDir, "md_result.md"),
-                ignore_labels=[
-                    BlockType.HEADER,
-                    BlockType.HEADER_IMAGE,
-                    BlockType.FOOTER,
-                    BlockType.FOOTER_IMAGE,
-                    BlockType.FOOTNOTE
-                ]
-        ) as md_writer:
+        with MarkdownWriter(file_path=os.path.join(pkg.MDDir, "md_result.md")) as md_writer:
             for file_result in markdown_file_result.children:
                 md_writer.write_list(file_result)
-
