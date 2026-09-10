@@ -57,33 +57,33 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             api_key="not-needed"
         ))
 
-        image_path1 = os.path.join(
-            pkg.PdfTempDir,
-            "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
-            "pdf_image",
-            "page_3.webp"
-        )
-
-        image_path2 = os.path.join(
-            pkg.PdfTempDir,
-            "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
-            "pdf_image",
-            "page_4.webp"
-        )
-
         # image_path1 = os.path.join(
         #     pkg.PdfTempDir,
-        #     "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+        #     "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
         #     "pdf_image",
-        #     "page_2.webp"
+        #     "page_3.webp"
         # )
         #
         # image_path2 = os.path.join(
         #     pkg.PdfTempDir,
-        #     "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+        #     "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c",
         #     "pdf_image",
-        #     "page_3.webp"
+        #     "page_4.webp"
         # )
+
+        image_path1 = os.path.join(
+            pkg.PdfTempDir,
+            "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+            "pdf_image",
+            "page_1.webp"
+        )
+
+        image_path2 = os.path.join(
+            pkg.PdfTempDir,
+            "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+            "pdf_image",
+            "page_2.webp"
+        )
 
         messages = llm_model.set_diff_prompt_image_message(
             prompt_image_list=[("Image 1", [image_path1]), ("Image 2", [image_path2])],
