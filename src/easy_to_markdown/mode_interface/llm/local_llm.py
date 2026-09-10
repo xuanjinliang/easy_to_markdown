@@ -14,8 +14,11 @@ class LocalLLM:
         if len(system_info) > 0:
             input_prompt = self.llm_model.generate_message(content=system_info, role="system")
 
-        for image in image_list:
-            input_prompt += self.llm_model.preprocess_image(prompt=prompt, images=[image])
+        if len(image_list) > 0:
+            for image in image_list:
+                input_prompt += self.llm_model.preprocess_image(prompt=prompt, images=[image])
+        elif prompt != "":
+            input_prompt += self.llm_model.preprocess_image(prompt=prompt, images=[])
 
         return input_prompt
 

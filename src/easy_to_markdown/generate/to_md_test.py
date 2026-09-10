@@ -5,10 +5,13 @@ import json
 from easy_to_markdown.generate import FileParsingResult
 from easy_to_markdown.generate.to_md import MarkdownJsonWriter, MarkdownFileResult, MarkdownWriter
 from easy_to_markdown.pkg.enum_class import BlockType
+from easy_to_markdown.llm_model import APIModelConfig
 
 
-class ToMarkdown(unittest.TestCase):
-    def test_markdown_json_writer1(self):
+class ToMarkdown(unittest.IsolatedAsyncioTestCase):
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+
+    async def test_markdown_json_writer1(self):
         file_dir = os.path.join(pkg.PdfTempDir, "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c")
         with open(os.path.join(file_dir, "layout_result.json"), "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -22,8 +25,14 @@ class ToMarkdown(unittest.TestCase):
                                                 BlockType.FOOTER,
                                                 BlockType.FOOTER_IMAGE,
                                                 BlockType.FOOTNOTE
-                                            ])
-        md_json_info = md_json_writer.run(file_parsing_result_list)
+                                            ],
+                                            llm_conf=APIModelConfig(
+                                                model=self.model_path,
+                                                temperature=0,
+                                                base_url="http://localhost:8777/v1",
+                                                api_key="not-needed"
+                                            ))
+        md_json_info = await md_json_writer.run(file_parsing_result_list)
         print(md_json_info)
 
         json_data = md_json_info.model_dump()
@@ -36,7 +45,7 @@ class ToMarkdown(unittest.TestCase):
         with open(os.path.join(pkg.MDDir, "md_result.json"), "w", encoding="utf-8") as f:
             f.write(json_str)
 
-    def test_markdown_json_writer2(self):
+    async def test_markdown_json_writer2(self):
         file_dir = os.path.join(pkg.PdfTempDir, "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159")
         with open(os.path.join(file_dir, "layout_result.json"), "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -50,8 +59,14 @@ class ToMarkdown(unittest.TestCase):
                                                 BlockType.FOOTER,
                                                 BlockType.FOOTER_IMAGE,
                                                 BlockType.FOOTNOTE
-                                            ])
-        md_json_info = md_json_writer.run(file_parsing_result_list)
+                                            ],
+                                            llm_conf=APIModelConfig(
+                                                model=self.model_path,
+                                                temperature=0,
+                                                base_url="http://localhost:8777/v1",
+                                                api_key="not-needed"
+                                            ))
+        md_json_info = await md_json_writer.run(file_parsing_result_list)
         print(md_json_info)
 
         json_data = md_json_info.model_dump()

@@ -93,10 +93,14 @@ class MarkdownInfo(BaseModel):
     level: int = 0
     block_content: str = ""
     block_image_content: Optional[str] = Field(default=None)
+
+
+class ImgMergeInfo(ImageResponse):
     merge_position: list[tuple[int, int]] = []
+    merge_reason: str = ""
 
 
 class MarkdownFileResult(BaseModel):
     ignore_block_label: list[str] = []
-    img_info: list[ImageResponse] = []
+    img_info: list[ImgMergeInfo] = []
     children: list[list[MarkdownInfo]] = []

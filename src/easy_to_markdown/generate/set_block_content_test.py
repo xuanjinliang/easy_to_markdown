@@ -71,11 +71,24 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             "page_4.webp"
         )
 
-        message = llm_model.set_message(
-            prompt="Image 1 and Image 2",
-            image_list=[image_path1, image_path2],
+        # image_path1 = os.path.join(
+        #     pkg.PdfTempDir,
+        #     "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+        #     "pdf_image",
+        #     "page_2.webp"
+        # )
+        #
+        # image_path2 = os.path.join(
+        #     pkg.PdfTempDir,
+        #     "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
+        #     "pdf_image",
+        #     "page_3.webp"
+        # )
+
+        messages = llm_model.set_diff_prompt_image_message(
+            prompt_image_list=[("Image 1", [image_path1]), ("Image 2", [image_path2])],
             system_info_type=2
         )
-        results = await llm_model.predict(messages=[message], schema=Description)
+        results = await llm_model.predict(messages=[messages], schema=Description)
         print(results[0].content)
         print(results[0])

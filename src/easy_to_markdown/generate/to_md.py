@@ -1,3 +1,4 @@
+from easy_to_markdown.llm_model import APIModelConfig
 from easy_to_markdown.pkg.common import ensure_dir
 import os
 from pathlib import Path
@@ -6,7 +7,14 @@ import shutil
 from easy_to_markdown.pkg.enum_class import BlockType
 from easy_to_markdown.pkg.format_table import Table, TableCell
 from easy_to_markdown.generate import (FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult,
-                                       ModelInfo, TableInfo)
+                                       ModelInfo, TableInfo, ImgMergeInfo)
+from easy_to_markdown.generate.set_block_content import SetBlockContent
+from pydantic import BaseModel
+
+
+class Description(BaseModel):
+    truncated: bool
+    reason: str
 
 
 class MarkdownWriter:
@@ -44,11 +52,13 @@ class MarkdownJsonWriter:
                  ignore_labels: list[str] | None = None,
                  ignore_header: bool = True,
                  ignore_footer: bool = True,
-                 is_merge: bool = True):
+                 is_merge: bool = True,
+                 llm_conf: APIModelConfig | None = None):
         self.output_dir = output_dir
         ensure_dir(output_dir)
 
         self.tolerance = tolerance
+
         if is_merge:
             ignore_header = True
             ignore_footer = True
@@ -61,6 +71,9 @@ class MarkdownJsonWriter:
                                     BlockType.FOOTNOTE] if ignore_footer else []
 
         self.ignore_labels = list(dict.fromkeys(ignore_labels))
+
+        self.is_merge = is_merge
+        self.llm_model = SetBlockContent(llm_conf=llm_conf) if llm_conf is not None else None
 
     def set_content(self, block: ParsingResult) -> MarkdownInfo | None:
         if len(self.ignore_labels) > 0 and block.block_label in self.ignore_labels:
@@ -197,15 +210,65 @@ class MarkdownJsonWriter:
 
         return blocks_info_list
 
-    def run(self, file_parsing_data: list[FileParsingResult]) -> MarkdownFileResult:
-        img_info = []
+    async def marge_paper(self, markdown_file_result: MarkdownFileResult) -> MarkdownFileResult:
+        if self.llm_model is None:
+            return markdown_file_result
+
+        img_info = markdown_file_result.img_info
+        if len(img_info) <= 1:
+            return markdown_file_result
+
+        marge_split_list = list(zip(img_info, img_info[1:]))
+        massages = []
+        for item in marge_split_list:
+            image1, image2 = item
+
+            message = self.llm_model.set_diff_prompt_image_message(
+                prompt_image_list=[("Image 1", [image1.image_path]), ("Image 2", [image2.image_path])],
+                system_info_type=2
+            )
+            massages.append(message)
+
+        results = await self.llm_model.predict(messages=massages, schema=Description)
+        if len(results) == 0:
+            return markdown_file_result
+
+        for index, item in enumerate(results):
+            if not isinstance(item, ModelInfo):
+                continue
+
+            content = item.content
+            result = Description.model_validate_json(content)
+
+            if result.truncated:
+                img_info[index].merge_position = [index, index + 1]
+
+            if result.reason:
+                img_info[index].merge_reason = result.reason
+
+        return markdown_file_result
+
+    async def run(self, file_parsing_data: list[FileParsingResult]) -> MarkdownFileResult:
+        img_info: list[ImgMergeInfo] = []
         children = []
         for page_index, file_parsing_result in enumerate(file_parsing_data):
-            img_info.append(file_parsing_result.img_info)
+            page_info = file_parsing_result.img_info
+            img_merge_info = ImgMergeInfo(
+                page_index=page_info.page_index,
+                image_path=page_info.image_path,
+                width=page_info.width,
+                height=page_info.height,
+            )
+            img_info.append(img_merge_info)
             children.append(self.generate_blocks(file_parsing_result.blocks))
 
-        return MarkdownFileResult(
+        markdown_file_result = MarkdownFileResult(
             ignore_block_label=list(dict.fromkeys(self.ignore_labels + self.ignore_footer_label)),
             img_info=img_info,
             children=children
         )
+
+        if self.is_merge:
+            markdown_file_result = await self.marge_paper(markdown_file_result)
+
+        return markdown_file_result

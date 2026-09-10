@@ -45,6 +45,19 @@ class SetBlockContent:
         return self.local_llm.set_message(
             prompt=prompt, image_list=image_list, system_info=system_info)
 
+    def set_diff_prompt_image_message(self,
+                                   prompt_image_list: list[tuple[str, list[str]]],
+                                   system_info_type: int) -> list[dict[str, Any]]:
+        system_info = self.set_system_info(system_info_type)
+        messages = self.local_llm.set_message(prompt="", image_list=[], system_info=system_info)
+
+        if len(prompt_image_list) > 0:
+            for item in prompt_image_list:
+                prompt, image_list = item
+                messages += self.local_llm.set_message(prompt=prompt, image_list=image_list)
+
+        return messages
+
     async def predict(self,
                       messages: list[list[dict[str, Any]]],
                       schema: type[BaseModel] | None = None) -> list[ModelInfo]:

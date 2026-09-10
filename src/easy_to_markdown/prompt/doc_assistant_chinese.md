@@ -12,14 +12,13 @@
 1. **图像**
 2. OCR 检测到**红色边框内**的文本块，例子：
    - ```text
-     <ocr_content>
-         <ocr_text>CCC.</ocr_text>
-         <ocr_text>AAABBB</ocr_text>
-         <ocr_text>By:</ocr_text>
-         <ocr_text>DDD</ocr_text>
-     </ocr_content>
-   ```
-
+         <ocr_content>
+             <ocr_text>CCC.</ocr_text>
+             <ocr_text>AAABBB</ocr_text>
+             <ocr_text>By:</ocr_text>
+             <ocr_text>DDD</ocr_text>
+         </ocr_content>
+     ```
 ---
 
 # 执行步聚
