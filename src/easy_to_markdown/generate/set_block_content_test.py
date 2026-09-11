@@ -75,14 +75,14 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             pkg.PdfTempDir,
             "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
             "pdf_image",
-            "page_1.webp"
+            "page_2.webp"
         )
 
         image_path2 = os.path.join(
             pkg.PdfTempDir,
             "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
             "pdf_image",
-            "page_2.webp"
+            "page_3.webp"
         )
 
         messages = llm_model.set_diff_prompt_image_message(

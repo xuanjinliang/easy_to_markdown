@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from uuid import uuid4
 import shutil
+import numpy as np
+from PIL import Image
 from easy_to_markdown.pkg.enum_class import BlockType
 from easy_to_markdown.pkg.format_table import Table, TableCell
 from easy_to_markdown.generate import (FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult,
@@ -224,7 +226,7 @@ class MarkdownJsonWriter:
             image1, image2 = item
 
             message = self.llm_model.set_diff_prompt_image_message(
-                prompt_image_list=[("Image 1", [image1.image_path]), ("Image 2", [image2.image_path])],
+                prompt_image_list=[("Image 1", [image1.merge_image_path]), ("Image 2", [image2.merge_image_path])],
                 system_info_type=2
             )
             massages.append(message)
@@ -248,10 +250,36 @@ class MarkdownJsonWriter:
 
         return markdown_file_result
 
+    def generate_merge_image(self, markdown_file_result: MarkdownFileResult) -> MarkdownFileResult:
+        img_info = markdown_file_result.img_info
+        if len(img_info) <= 1:
+            return markdown_file_result
+
+        dst_dir = os.path.join(self.output_dir, "merge_images")
+        ensure_dir(dst_dir)
+
+        for index, item in enumerate(img_info):
+            content = markdown_file_result.children[index]
+            bboxes = np.asarray([obj.block_bbox for obj in content])
+            w = item.width
+            h = item.height
+
+            min_y1 = max(0, bboxes[:, 1].min() - 4)
+            max_y2 = min(bboxes[:, 3].max() + 4, h)
+            image_src = item.image_path
+            filename = Path(image_src).name
+            image = Image.open(image_src)
+            crop_img = image.crop((0, min_y1, w, max_y2))
+            crop_path = os.path.join(dst_dir, filename)
+            crop_img.save(crop_path)
+            item.merge_image_path = crop_path
+
+        return markdown_file_result
+
     async def run(self, file_parsing_data: list[FileParsingResult]) -> MarkdownFileResult:
         img_info: list[ImgMergeInfo] = []
         children = []
-        for page_index, file_parsing_result in enumerate(file_parsing_data):
+        for file_parsing_result in file_parsing_data:
             page_info = file_parsing_result.img_info
             img_merge_info = ImgMergeInfo(
                 page_index=page_info.page_index,
@@ -269,6 +297,7 @@ class MarkdownJsonWriter:
         )
 
         if self.is_merge:
+            markdown_file_result = self.generate_merge_image(markdown_file_result)
             markdown_file_result = await self.marge_paper(markdown_file_result)
 
         return markdown_file_result

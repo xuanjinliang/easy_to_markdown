@@ -96,7 +96,8 @@ class MarkdownInfo(BaseModel):
 
 
 class ImgMergeInfo(ImageResponse):
-    merge_position: list[tuple[int, int]] = []
+    merge_image_path: str = ""
+    merge_position: list[int] = []
     merge_reason: str = ""
 
 
