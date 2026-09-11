@@ -93,6 +93,7 @@ class MarkdownInfo(BaseModel):
     level: int = 0
     block_content: str = ""
     block_image_content: Optional[str] = Field(default=None)
+    merged_position: list[int] = []
 
 
 class ImgMergeInfo(ImageResponse):

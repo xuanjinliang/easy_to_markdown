@@ -322,3 +322,19 @@ class HtmlTableRenderer:
         else:
             # td.text = cell.text
             self.set_text_with_br(td, cell.text)
+
+
+def table_html_to_lxml(table_html: str):
+    root = html.fromstring(table_html)
+
+    table_list: list[list[TableCell]] = []
+    for tr in root.xpath(".//tr"):
+        row_list: list[TableCell] = []
+        for td in tr.xpath("./td | ./th"):
+            text = td.text_content().strip()
+            rowspan = int(td.get("rowspan", "1"))
+            colspan = int(td.get("colspan", "1"))
+
+            row_list.append(TableCell(text=text, tag="td", rowspan=rowspan, colspan=colspan))
+
+        table_list.append(row_list)

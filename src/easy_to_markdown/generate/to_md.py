@@ -26,7 +26,7 @@ class MarkdownWriter:
     def write(self, markdown_info: MarkdownInfo):
         content = markdown_info.block_image_content if (
                 markdown_info.block_image_content is not None) else markdown_info.block_content
-        self.md_file.write(content)
+        self.md_file.write(content + "\n\n")
         self.md_file.flush()
 
     def write_list(self, list_markdown_info: list[MarkdownInfo]):
@@ -96,7 +96,7 @@ class MarkdownJsonWriter:
         match label_type:
             case "title":
                 if isinstance(block.block_content, ModelInfo):
-                    markdown_info.block_content = f"{'#' * block.level} {block.block_content.content}\n\n"
+                    markdown_info.block_content = f"{'#' * block.level} {block.block_content.content}"
             case "image":
                 if block.crop_path is not None and os.path.exists(block.crop_path):
                     markdown_info.block_image_content = self.set_image_content(block.crop_path)
@@ -105,7 +105,7 @@ class MarkdownJsonWriter:
                     markdown_info.block_content = self.set_table_content(block.table_info)
             case _:
                 if isinstance(block.block_content, ModelInfo):
-                    markdown_info.block_content = f"{block.block_content.content}\n\n"
+                    markdown_info.block_content = f"{block.block_content.content}"
 
         return markdown_info
 
@@ -180,7 +180,7 @@ class MarkdownJsonWriter:
             table.add_row(cells=table_cell)
 
         table.calculate_spans(tolerance=self.tolerance)
-        return table.to_html() + "\n\n"
+        return table.to_html()
 
     def set_image_content(self, image_path: str) -> str:
         original = Path(image_path)
@@ -193,7 +193,7 @@ class MarkdownJsonWriter:
 
         image_path = str(dst.relative_to(self.output_dir))
 
-        return f'<img src="{image_path}" alt="Image" />\n\n'
+        return f'<img src="{image_path}" alt="Image" />'
 
     def generate_blocks(self, blocks: list[ParsingResult]) -> list[MarkdownInfo]:
         blocks_info_list: list[MarkdownInfo] = []
@@ -301,3 +301,41 @@ class MarkdownJsonWriter:
             markdown_file_result = await self.marge_paper(markdown_file_result)
 
         return markdown_file_result
+
+
+def recover_truncated_content(markdown_file_result: MarkdownFileResult):
+    img_info = markdown_file_result.img_info
+    children = markdown_file_result.children
+
+    for index, item in enumerate(img_info):
+        if len(item.merge_position) <= 1:
+            continue
+
+        page_index = item.merge_position
+        first_page = children[page_index[0]]
+        last_page = children[page_index[-1]]
+        first_page_last_item = first_page[-1]
+        last_page_first_item = last_page[0]
+
+        if first_page_last_item.block_label_type != last_page_first_item.block_label_type:
+            continue
+
+        match first_page_last_item.block_label_type:
+            case "image":
+                if (first_page_last_item.block_image_content is None or
+                        last_page_first_item.block_image_content is None):
+                    continue
+
+                first_page_last_item.block_image_content += last_page_first_item.block_image_content
+            case "table":
+                continue
+            case _:
+                if (len(first_page_last_item.block_content) == 0 or
+                        len(last_page_first_item.block_content) == 0):
+                    continue
+                first_page_last_item.block_content += last_page_first_item.block_content
+
+        last_page_first_item.merged_position = [page_index[0], len(children[page_index[0]]) - 1]
+
+
+
