@@ -102,7 +102,10 @@ class MarkdownJsonWriter:
                     markdown_info.block_image_content = self.set_image_content(block.crop_path)
             case "table":
                 if isinstance(block.table_info, TableInfo):
-                    markdown_info.block_content = self.set_table_content(block.table_info)
+                    table_struct = self.set_table_content(block.table_info)
+                    if table_struct is not None:
+                        markdown_info.table_info = table_struct
+                        markdown_info.block_content = table_struct.to_html()
             case _:
                 if isinstance(block.block_content, ModelInfo):
                     markdown_info.block_content = f"{block.block_content.content}"
@@ -169,9 +172,9 @@ class MarkdownJsonWriter:
 
         return rows_list
 
-    def set_table_content(self, table_info: TableInfo) -> str:
+    def set_table_content(self, table_info: TableInfo) -> Table | None:
         if len(table_info.table_list) == 0:
-            return ""
+            return None
 
         table = Table(width=table_info.width, height=table_info.height)
 
@@ -180,7 +183,7 @@ class MarkdownJsonWriter:
             table.add_row(cells=table_cell)
 
         table.calculate_spans(tolerance=self.tolerance)
-        return table.to_html()
+        return table
 
     def set_image_content(self, image_path: str) -> str:
         original = Path(image_path)
@@ -336,6 +339,3 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
                 first_page_last_item.block_content += last_page_first_item.block_content
 
         last_page_first_item.merged_position = [page_index[0], len(children[page_index[0]]) - 1]
-
-
-

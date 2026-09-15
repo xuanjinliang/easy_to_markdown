@@ -5,6 +5,7 @@ from easy_to_markdown.pkg.pdf_to_image import ImageResponse
 from easy_to_markdown.mode_interface.ocr import OCRContent
 from easy_to_markdown.mode_interface.layout import LayoutResult
 from easy_to_markdown.llm_model import ModelInfo
+from easy_to_markdown.pkg.format_table import Table
 
 
 class ParsingResult(LayoutResult):
@@ -93,6 +94,7 @@ class MarkdownInfo(BaseModel):
     level: int = 0
     block_content: str = ""
     block_image_content: Optional[str] = Field(default=None)
+    table_info: Optional[Table] = None
     merged_position: list[int] = []
 
 

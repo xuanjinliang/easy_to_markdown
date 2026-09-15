@@ -324,7 +324,7 @@ class HtmlTableRenderer:
             self.set_text_with_br(td, cell.text)
 
 
-def table_html_to_lxml(table_html: str):
+def table_html_to_cell(table_html: str) -> list[list[TableCell]]:
     root = html.fromstring(table_html)
 
     table_list: list[list[TableCell]] = []
@@ -335,6 +335,45 @@ def table_html_to_lxml(table_html: str):
             rowspan = int(td.get("rowspan", "1"))
             colspan = int(td.get("colspan", "1"))
 
-            row_list.append(TableCell(text=text, tag="td", rowspan=rowspan, colspan=colspan))
+            row_list.append(TableCell(text=text, tag=td.tag, rowspan=rowspan, colspan=colspan))
 
         table_list.append(row_list)
+
+    return table_list
+
+
+def build_table_grid(table: list[list[TableCell]]) -> list[list[TableCell | None]]:
+    grid: list[list[TableCell | None]] = []
+
+    for row_index, row in enumerate(table):
+        while len(grid) <= row_index:
+            grid.append([])
+
+        col_index = 0
+
+        for cell in row:
+            while (
+                    col_index < len(grid[row_index])
+                    and grid[row_index][col_index] is not None
+            ):
+                col_index += 1
+
+            for r in range(
+                    row_index,
+                    row_index + cell.rowspan,
+            ):
+                while len(grid) <= r:
+                    grid.append([])
+
+                for c in range(
+                        col_index,
+                        col_index + cell.colspan,
+                ):
+                    while len(grid[r]) <= c:
+                        grid[r].append(None)
+
+                    grid[r][c] = cell
+
+            col_index += cell.colspan
+
+    return grid
