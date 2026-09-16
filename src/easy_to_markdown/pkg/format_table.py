@@ -1,9 +1,15 @@
 from __future__ import annotations
 from lxml import etree, html
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, Iterable
 import numpy as np
 import re
+
+import logging
+from logging import NullHandler
+
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
 
 
 class TableCell(BaseModel):
@@ -325,61 +331,6 @@ class HtmlTableRenderer:
             self.set_text_with_br(td, cell.text)
 
 
-def table_html_to_cell(table_html: str) -> list[list[TableCell]]:
-    root = html.fromstring(table_html)
-
-    table_list: list[list[TableCell]] = []
-    for tr in root.xpath(".//tr"):
-        row_list: list[TableCell] = []
-        for td in tr.xpath("./td | ./th"):
-            text = td.text_content().strip()
-            rowspan = int(td.get("rowspan", "1"))
-            colspan = int(td.get("colspan", "1"))
-
-            row_list.append(TableCell(text=text, tag=td.tag, rowspan=rowspan, colspan=colspan))
-
-        table_list.append(row_list)
-
-    return table_list
-
-
-def build_table_grid(table: list[list[TableCell]]) -> list[list[TableCell | None]]:
-    grid: list[list[TableCell | None]] = []
-
-    for row_index, row in enumerate(table):
-        while len(grid) <= row_index:
-            grid.append([])
-
-        col_index = 0
-
-        for cell in row:
-            while (
-                    col_index < len(grid[row_index])
-                    and grid[row_index][col_index] is not None
-            ):
-                col_index += 1
-
-            for r in range(
-                    row_index,
-                    row_index + cell.rowspan,
-            ):
-                while len(grid) <= r:
-                    grid.append([])
-
-                for c in range(
-                        col_index,
-                        col_index + cell.colspan,
-                ):
-                    while len(grid[r]) <= c:
-                        grid[r].append(None)
-
-                    grid[r][c] = cell
-
-            col_index += cell.colspan
-
-    return grid
-
-
 def _get_first_row(table: Table) -> list[TableCell]:
     if len(table.rows) == 0:
         return []
@@ -567,3 +518,310 @@ def compare_header(a_table: Table, b_table: Table) -> dict[int, tuple[int, ...]]
         base_col: tuple(source_cols)
         for base_col, source_cols in mapping.items()
     }
+
+
+def _build_logical_rows(table: Table) -> list[dict[int, tuple[TableCell, bool]]]:
+    if not table.rows:
+        return []
+
+    max_row = 0
+    for row in table.rows:
+        for cell in row.cells:
+            start_row = int(cell.row)
+            rowspan = max(int(cell.rowspan), 1)
+
+            max_row = max(
+                max_row,
+                start_row + rowspan - 1,
+            )
+
+    if max_row <= 0:
+        return []
+
+    # tuple[TableCell, bool] --> table_cell, is_origin
+    occupancy: list[dict[int, tuple[TableCell, bool]]] = [
+        {}
+        for _ in range(max_row + 1)
+    ]
+
+    for row in table.rows:
+        for cell in row.cells:
+            start_row = int(cell.row)
+            start_col = int(cell.col)
+
+            rowspan = max(
+                int(cell.rowspan),
+                1,
+            )
+
+            colspan = max(
+                int(cell.colspan),
+                1,
+            )
+
+            if start_row < 1:
+                raise ValueError(
+                    f"Invalid cell.row={start_row}: "
+                    f"{cell!r}"
+                )
+
+            if start_col < 1:
+                raise ValueError(
+                    f"Invalid cell.col={start_col}: "
+                    f"{cell!r}"
+                )
+
+            for logical_row in range(
+                    start_row,
+                    start_row + rowspan,
+            ):
+
+                if logical_row >= len(occupancy):
+                    raise ValueError(
+                        "Cell exceeds table row range: "
+                        f"row={logical_row}, "
+                        f"cell={cell!r}"
+                    )
+
+                for logical_col in range(start_col, start_col + colspan):
+                    occupancy[logical_row][logical_col] = (cell, logical_row == cell.row)
+
+    return occupancy[1:]
+
+
+def _is_rowspan_only_row(row: dict[int, tuple[TableCell, bool]]) -> bool:
+    if not row:
+        return False
+
+    return all(
+        not is_new_cell
+        for _, is_new_cell in row.values()
+    )
+
+
+def _merge_single_row(
+        logical_row: dict[int, tuple[TableCell, bool]],
+        column_mapping: dict[int, tuple[int, ...]],
+        base_column_count: int,
+) -> list[TableCell]:
+    result: list[TableCell] = []
+
+    for base_col in range(
+            1,
+            base_column_count + 1,
+    ):
+
+        source_cols = column_mapping.get(base_col)
+        if not source_cols:
+            continue
+
+        source_cells = _get_source_cells(
+            logical_row=logical_row,
+            source_cols=source_cols,
+        )
+
+        if not source_cells:
+            continue
+
+        merged_cell = _merge_source_cells(
+            source_cells=source_cells,
+            base_col=base_col,
+        )
+
+        result.append(merged_cell)
+
+    return result
+
+
+def _get_source_cells(logical_row: dict[int, tuple[TableCell, bool]], source_cols: tuple[int, ...]) -> list[TableCell]:
+    result: list[TableCell] = []
+
+    seen: set[int] = set()
+
+    for source_col in source_cols:
+        cell, is_origin = logical_row.get(source_col, (None, False))
+        if cell is None:
+            continue
+
+        cell_id = id(cell)
+
+        if cell_id in seen:
+            continue
+
+        seen.add(cell_id)
+        result.append(cell)
+
+    return result
+
+
+def _merge_source_cells(source_cells: list[TableCell], base_col: int) -> TableCell:
+    if not source_cells:
+        raise ValueError(
+            "source_cells cannot be empty."
+        )
+
+    if len(source_cells) == 1:
+        cell = source_cells[0]
+
+        return _copy_cell(
+            cell,
+            col=base_col,
+            colspan=1,
+        )
+
+    source_cells = sorted(
+        source_cells,
+        key=lambda cell: int(cell.col),
+    )
+
+    text = _merge_cell_text(source_cells)
+    bbox = _merge_cell_bbox(source_cells)
+
+    rowspan = max(
+        max(int(cell.rowspan), 1)
+        for cell in source_cells
+    )
+
+    first = source_cells[0]
+
+    return _copy_cell(
+        first,
+        text=text,
+        col=base_col,
+        colspan=1,
+        rowspan=rowspan,
+        bbox=bbox,
+    )
+
+
+def _merge_cell_text(cells: Iterable[TableCell]) -> str:
+    texts: list[str] = []
+
+    for cell in cells:
+        text = cell.text
+        text = str(text).strip()
+
+        if not text:
+            continue
+
+        texts.append(text)
+
+    return " ".join(texts)
+
+
+def _merge_cell_bbox(
+        cells: Iterable[TableCell],
+) -> tuple[float, float, float, float] | None:
+    bboxes = [
+        cell.bbox
+        for cell in cells
+        if cell.bbox is not None
+    ]
+
+    if not bboxes:
+        return None
+
+    x1 = min(
+        bbox[0]
+        for bbox in bboxes
+    )
+
+    y1 = min(
+        bbox[1]
+        for bbox in bboxes
+    )
+
+    x2 = max(
+        bbox[2]
+        for bbox in bboxes
+    )
+
+    y2 = max(
+        bbox[3]
+        for bbox in bboxes
+    )
+
+    return x1, y1, x2, y2
+
+
+def _copy_cell(cell: TableCell, **changes) -> TableCell:
+    return cell.model_copy(
+        update=changes,
+        deep=True,
+    )
+
+
+# Mapping validation
+def _validate_column_mapping(mapping: dict[int, tuple[int, ...]]) -> bool:
+    if not mapping:
+        logger.error("column_mapping cannot be empty.")
+        return False
+
+    previous_source_col = 0
+
+    for base_col in sorted(mapping):
+        if base_col < 1:
+            logger.error(f"Invalid base column: {base_col}")
+            return False
+
+        source_cols = mapping[base_col]
+
+        if not source_cols:
+            logger.error(
+                f"Empty source columns for "
+                f"base column {base_col}"
+            )
+            return False
+
+        if tuple(sorted(source_cols)) != source_cols:
+            logger.error(
+                f"Source columns must be sorted: "
+                f"base={base_col}, "
+                f"source={source_cols}"
+            )
+            return False
+
+        if len(set(source_cols)) != len(source_cols):
+            logger.error(
+                f"Duplicate source columns: "
+                f"base={base_col}, "
+                f"source={source_cols}"
+            )
+            return False
+
+        if source_cols[0] <= previous_source_col:
+            logger.error(
+                "Column mapping is not monotonic: "
+                f"base={base_col}, "
+                f"source={source_cols}"
+            )
+            return False
+        previous_source_col = source_cols[-1]
+
+    return True
+
+
+def merge_rows(table: Table, column_mapping: dict[int, tuple[int, ...]]) -> list[list[TableCell]]:
+    if not table.rows:
+        return []
+
+    _validate_column_mapping(column_mapping)
+
+    logical_rows = _build_logical_rows(table)
+    result: list[list[TableCell]] = []
+    base_column_count = max(column_mapping)
+
+    for logical_row in logical_rows:
+        if _is_rowspan_only_row(logical_row):
+            continue
+
+        merged_row = _merge_single_row(
+            logical_row=logical_row,
+            column_mapping=column_mapping,
+            base_column_count=base_column_count,
+        )
+
+        if merged_row:
+            result.append(merged_row)
+
+    return result

@@ -3,7 +3,7 @@ import os
 import json
 from easy_to_markdown import pkg
 from easy_to_markdown.pkg.format_table import (
-    Table, TableCell, table_html_to_cell, build_table_grid, compare_header)
+    Table, TableCell, compare_header, merge_rows)
 from easy_to_markdown.generate.to_md import MarkdownFileResult
 
 
@@ -54,18 +54,6 @@ class FormatTable(unittest.TestCase):
         print("json:")
         print(cell.model_dump_json())
 
-    def test_table_html_to_cell(self):
-        with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        markdown_file_result = MarkdownFileResult.model_validate(data)
-        a_children = markdown_file_result.children[2]
-        for item in a_children:
-            if item.block_label == "table":
-                table_cell = table_html_to_cell(item.block_content)
-                grid = build_table_grid(table_cell)
-                print(grid)
-
     def test_compare_header(self):
         with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -88,5 +76,9 @@ class FormatTable(unittest.TestCase):
         if a_table is None or b_table is None:
             return
 
-        result = compare_header(a_table, b_table)
-        print(result)
+        compare_header_result = compare_header(a_table, b_table)
+        if compare_header_result is None:
+            return
+
+        merge_rows_result = merge_rows(b_table, compare_header_result)
+        print(merge_rows_result)
