@@ -2,8 +2,10 @@ import unittest
 import os
 import json
 from easy_to_markdown import pkg
-from easy_to_markdown.pkg.format_table import Table, TableCell, table_html_to_cell, build_table_grid
+from easy_to_markdown.pkg.format_table import (
+    Table, TableCell, table_html_to_cell, build_table_grid, compare_header)
 from easy_to_markdown.generate.to_md import MarkdownFileResult
+
 
 class FormatTable(unittest.TestCase):
     def test_format_table1(self):
@@ -63,3 +65,28 @@ class FormatTable(unittest.TestCase):
                 table_cell = table_html_to_cell(item.block_content)
                 grid = build_table_grid(table_cell)
                 print(grid)
+
+    def test_compare_header(self):
+        with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        markdown_file_result = MarkdownFileResult.model_validate(data)
+        a_children = markdown_file_result.children[1]
+        a_table = None
+        for item in a_children:
+            if item.block_label == "table":
+                a_table = item.table_info
+                break
+
+        b_children = markdown_file_result.children[2]
+        b_table = None
+        for item in b_children:
+            if item.block_label == "table":
+                b_table = item.table_info
+                break
+
+        if a_table is None or b_table is None:
+            return
+
+        result = compare_header(a_table, b_table)
+        print(result)
