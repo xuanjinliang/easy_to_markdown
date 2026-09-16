@@ -81,4 +81,4 @@ class FormatTable(unittest.TestCase):
             return
 
         merge_rows_result = merge_rows(b_table, compare_header_result)
-        print(merge_rows_result)
+        print(f"{merge_rows_result}")
