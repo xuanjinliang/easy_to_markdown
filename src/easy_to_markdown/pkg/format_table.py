@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Iterable
 import numpy as np
 import re
-
+from copy import deepcopy
 import logging
 from logging import NullHandler
 
@@ -520,12 +520,185 @@ def compare_header(a_table: Table, b_table: Table) -> dict[int, tuple[int, ...]]
     }
 
 
-def _build_logical_rows(table: Table) -> list[dict[int, tuple[TableCell, bool]]]:
-    if not table.rows:
+def _bbox_x_overlap(a: TableCell, b: TableCell) -> float:
+    if a.bbox is None or b.bbox is None:
+        return 0.0
+
+    ax1, _, ax2, _ = a.bbox
+    bx1, _, bx2, _ = b.bbox
+
+    return max(
+        0.0,
+        min(ax2, bx2) - max(ax1, bx1),
+    )
+
+
+def _bbox_x_overlap_ratio(a: TableCell, b: TableCell) -> float:
+    if a.bbox is None or b.bbox is None:
+        return 0.0
+
+    ax1, _, ax2, _ = a.bbox
+    bx1, _, bx2, _ = b.bbox
+
+    overlap = max(
+        0.0,
+        min(ax2, bx2) - max(ax1, bx1),
+    )
+
+    a_width = max(ax2 - ax1, 1e-6)
+    b_width = max(bx2 - bx1, 1e-6)
+
+    return overlap / min(a_width, b_width)
+
+
+def build_row_mapping(
+        base_row: list[TableCell],
+        source_row: list[TableCell]
+) -> dict[int, tuple[int, ...]] | None:
+    if not base_row or not source_row:
+        return None
+
+    base = _expand(base_row)
+    source = _expand(source_row)
+
+    if not base or not source:
+        return None
+
+    mapping: dict[int, list[int]] = {
+        base_col: []
+        for base_col in sorted(base)
+    }
+
+    for source_col, source_cell in source.items():
+
+        if source_cell.bbox is None:
+            return None
+
+        candidates: list[tuple[float, float, int]] = []
+
+        for base_col, base_cell in base.items():
+
+            if base_cell.bbox is None:
+                continue
+
+            overlap = _bbox_x_overlap(
+                base_cell,
+                source_cell,
+            )
+
+            ratio = _bbox_x_overlap_ratio(
+                base_cell,
+                source_cell,
+            )
+
+            if overlap > 0:
+                candidates.append(
+                    (
+                        ratio,
+                        overlap,
+                        base_col,
+                    )
+                )
+
+        if not candidates:
+            source_x1, _, source_x2, _ = source_cell.bbox
+            source_center = (source_x1 + source_x2) * 0.5
+
+            base_col = min(
+                base,
+                key=lambda col: _bbox_center_distance(
+                    base[col],
+                    source_center,
+                ),
+            )
+
+        else:
+            _, _, base_col = max(
+                candidates,
+                key=lambda item: (
+                    item[0],
+                    item[1],
+                ),
+            )
+
+        mapping[base_col].append(source_col)
+
+    for base_col, source_cols in mapping.items():
+
+        if not source_cols:
+            return None
+
+        source_cols.sort()
+
+        expected = list(
+            range(
+                source_cols[0],
+                source_cols[-1] + 1,
+            )
+        )
+
+        if source_cols != expected:
+            return None
+
+    return {
+        base_col: tuple(source_cols)
+        for base_col, source_cols in mapping.items()
+    }
+
+
+def _rows_structure_similar(
+        a_row: list[TableCell],
+        b_row: list[TableCell],
+        *,
+        x_tolerance: float = 10.0,
+) -> bool:
+    if not a_row or not b_row:
+        return False
+
+    a_cells = sorted(
+        a_row,
+        key=lambda cell: int(cell.col),
+    )
+    b_cells = sorted(
+        b_row,
+        key=lambda cell: int(cell.col),
+    )
+
+    if len(a_cells) != len(b_cells):
+        return False
+
+    for a_cell, b_cell in zip(a_cells, b_cells):
+
+        if int(a_cell.col) != int(b_cell.col):
+            return False
+
+        if max(int(a_cell.colspan), 1) != max(
+                int(b_cell.colspan),
+                1,
+        ):
+            return False
+
+        if a_cell.bbox is None or b_cell.bbox is None:
+            continue
+
+        ax1, _, ax2, _ = a_cell.bbox
+        bx1, _, bx2, _ = b_cell.bbox
+
+        if abs(ax1 - bx1) > x_tolerance:
+            return False
+
+        if abs(ax2 - bx2) > x_tolerance:
+            return False
+
+    return True
+
+
+def _build_logical_rows(rows: list[TableRow]) -> list[dict[int, tuple[TableCell, bool]]]:
+    if not rows:
         return []
 
     max_row = 0
-    for row in table.rows:
+    for row in rows:
         for cell in row.cells:
             start_row = int(cell.row)
             rowspan = max(int(cell.rowspan), 1)
@@ -544,7 +717,7 @@ def _build_logical_rows(table: Table) -> list[dict[int, tuple[TableCell, bool]]]
         for _ in range(max_row + 1)
     ]
 
-    for row in table.rows:
+    for row in rows:
         for cell in row.cells:
             start_row = int(cell.row)
             start_col = int(cell.col)
@@ -751,69 +924,27 @@ def _copy_cell(cell: TableCell, **changes) -> TableCell:
     )
 
 
-# Mapping validation
-def _validate_column_mapping(mapping: dict[int, tuple[int, ...]]) -> bool:
-    if not mapping:
-        logger.error("column_mapping cannot be empty.")
-        return False
-
-    previous_source_col = 0
-
-    for base_col in sorted(mapping):
-        if base_col < 1:
-            logger.error(f"Invalid base column: {base_col}")
-            return False
-
-        source_cols = mapping[base_col]
-
-        if not source_cols:
-            logger.error(
-                f"Empty source columns for "
-                f"base column {base_col}"
-            )
-            return False
-
-        if tuple(sorted(source_cols)) != source_cols:
-            logger.error(
-                f"Source columns must be sorted: "
-                f"base={base_col}, "
-                f"source={source_cols}"
-            )
-            return False
-
-        if len(set(source_cols)) != len(source_cols):
-            logger.error(
-                f"Duplicate source columns: "
-                f"base={base_col}, "
-                f"source={source_cols}"
-            )
-            return False
-
-        if source_cols[0] <= previous_source_col:
-            logger.error(
-                "Column mapping is not monotonic: "
-                f"base={base_col}, "
-                f"source={source_cols}"
-            )
-            return False
-        previous_source_col = source_cols[-1]
-
-    return True
-
-
-def merge_rows(table: Table, column_mapping: dict[int, tuple[int, ...]]) -> list[list[TableCell]]:
-    if not table.rows:
+def merge_rows(
+        rows: list[TableRow], column_mapping: dict[int, tuple[int, ...]], same_header: bool = False
+) -> list[TableRow]:
+    if not rows:
         return []
 
-    _validate_column_mapping(column_mapping)
-
-    logical_rows = _build_logical_rows(table)
-    result: list[list[TableCell]] = []
+    logical_rows = _build_logical_rows(rows)
+    result: list[TableRow] = []
     base_column_count = max(column_mapping)
 
+    current_row: list[TableCell] | None = None
     for logical_row in logical_rows:
         if _is_rowspan_only_row(logical_row):
             continue
+
+        single_row: list[TableCell] = [table_cell for table_cell, _ in logical_row.values()]
+        if current_row is None:
+            current_row = single_row
+        else:
+            if not _rows_structure_similar(current_row, single_row):
+                return rows
 
         merged_row = _merge_single_row(
             logical_row=logical_row,
@@ -822,6 +953,6 @@ def merge_rows(table: Table, column_mapping: dict[int, tuple[int, ...]]) -> list
         )
 
         if merged_row:
-            result.append(merged_row)
+            result.append(TableRow(cells=merged_row))
 
-    return result
+    return result[1:] if same_header else result

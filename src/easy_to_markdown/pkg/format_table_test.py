@@ -3,7 +3,7 @@ import os
 import json
 from easy_to_markdown import pkg
 from easy_to_markdown.pkg.format_table import (
-    Table, TableCell, compare_header, merge_rows)
+    Table, TableCell, compare_header, build_row_mapping, merge_rows)
 from easy_to_markdown.generate.to_md import MarkdownFileResult
 
 
@@ -77,8 +77,41 @@ class FormatTable(unittest.TestCase):
             return
 
         compare_header_result = compare_header(a_table, b_table)
-        if compare_header_result is None:
+        if compare_header_result is not None:
+            merge_rows_result = merge_rows(b_table.rows, compare_header_result, True)
+            print(f"{merge_rows_result}")
+            b_table.rows = merge_rows_result
+
+    def test_build_row_mapping(self):
+        with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        markdown_file_result = MarkdownFileResult.model_validate(data)
+        a_children = markdown_file_result.children[1]
+        a_table = None
+        for item in a_children:
+            if item.block_label == "table":
+                a_table = item.table_info
+                break
+
+        b_children = markdown_file_result.children[2]
+        b_table = None
+        for item in b_children:
+            if item.block_label == "table":
+                b_table = item.table_info
+                break
+
+        if a_table is None or b_table is None:
             return
 
-        merge_rows_result = merge_rows(b_table, compare_header_result)
-        print(f"{merge_rows_result}")
+        first_row = a_table.rows[0]
+        last_row = a_table.rows[-1]
+
+        row_mapping = build_row_mapping(first_row.cells, last_row.cells)
+        print(row_mapping)
+
+        if row_mapping is None:
+            return
+
+        merge_rows_result = merge_rows(b_table.rows, row_mapping, False)
+        print(merge_rows_result)
