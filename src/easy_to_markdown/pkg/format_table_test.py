@@ -82,6 +82,9 @@ class FormatTable(unittest.TestCase):
             print(f"{merge_rows_result}")
             b_table.rows = merge_rows_result
 
+
+
+
     def test_build_row_mapping(self):
         with open(os.path.join(pkg.MDDir, "md_result.json"), "r", encoding="utf-8") as f:
             data = json.load(f)

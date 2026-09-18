@@ -1,8 +1,5 @@
 from __future__ import annotations
-
-from urllib import request
-
-from lxml import etree, html
+from lxml import etree
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Iterable
 import numpy as np
@@ -20,7 +17,6 @@ class TableCell(BaseModel):
         validate_assignment=True,
     )
     text: str = ""
-    html: str | None = None
     row: int = Field(default=0, ge=0)
     col: int = Field(default=0, ge=0)
     rowspan: int = Field(default=1, ge=1)
@@ -319,19 +315,7 @@ class HtmlTableRenderer:
         if cell.colspan > 1:
             td.set("colspan", str(cell.colspan), )
 
-        if cell.html is not None:
-            fragments = html.fragments_fromstring(
-                cell.html
-            )
-
-            for fragment in fragments:
-                if isinstance(fragment, str):
-                    td.text = fragment
-                else:
-                    td.append(fragment)
-        else:
-            # td.text = cell.text
-            self.set_text_with_br(td, cell.text)
+        self.set_text_with_br(td, cell.text)
 
 
 def _get_first_row(table: Table) -> list[TableCell]:
@@ -977,3 +961,4 @@ def merge_rows(
             result.append(TableRow(cells=merged_row))
 
     return result
+
