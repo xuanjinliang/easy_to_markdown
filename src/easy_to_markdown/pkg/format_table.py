@@ -962,3 +962,15 @@ def merge_rows(
 
     return result
 
+def merge_table(table_list: list[Table]) -> Table | None:
+    if len(table_list) == 0:
+        return None
+
+    first = table_list[0]
+    width = first.width
+    height = first.height
+
+
+
+
+    return table_list[0]
