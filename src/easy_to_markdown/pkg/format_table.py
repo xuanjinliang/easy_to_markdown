@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from urllib import request
+
 from lxml import etree, html
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Iterable
@@ -236,11 +239,11 @@ class Table(BaseModel):
         for i, cell in enumerate(cells):
             cell.col = int(
                 col_start[i]
-            )
+            ) + 1
 
             cell.row = int(
                 row_start[i]
-            )
+            ) + 1
 
             cell.colspan = int(
                 cols[i]
@@ -640,6 +643,15 @@ def build_row_mapping(
         if source_cols != expected:
             return None
 
+        source_positions = [
+            source_col
+            for base_col in sorted(mapping)
+            for source_col in mapping[base_col]
+        ]
+
+        if source_positions != sorted(source_positions):
+            return None
+
     return {
         base_col: tuple(source_cols)
         for base_col, source_cols in mapping.items()
@@ -812,7 +824,7 @@ def _get_source_cells(logical_row: dict[int, tuple[TableCell, bool]], source_col
     seen: set[int] = set()
 
     for source_col in source_cols:
-        cell, is_origin = logical_row.get(source_col, (None, False))
+        cell, _ = logical_row.get(source_col, (None, False))
         if cell is None:
             continue
 
@@ -930,21 +942,30 @@ def merge_rows(
     if not rows:
         return []
 
+    rows = rows[1:] if len(rows) > 1 and same_header else rows
     logical_rows = _build_logical_rows(rows)
     result: list[TableRow] = []
     base_column_count = max(column_mapping)
 
     current_row: list[TableCell] | None = None
+    over = False
     for logical_row in logical_rows:
         if _is_rowspan_only_row(logical_row):
             continue
 
         single_row: list[TableCell] = [table_cell for table_cell, _ in logical_row.values()]
+
+        if over:
+            result.append(TableRow(cells=single_row))
+            continue
+
         if current_row is None:
             current_row = single_row
         else:
             if not _rows_structure_similar(current_row, single_row):
-                return rows
+                result.append(TableRow(cells=single_row))
+                over = True
+                continue
 
         merged_row = _merge_single_row(
             logical_row=logical_row,
@@ -955,4 +976,4 @@ def merge_rows(
         if merged_row:
             result.append(TableRow(cells=merged_row))
 
-    return result[1:] if same_header else result
+    return result
