@@ -3,7 +3,7 @@ import os
 import json
 from easy_to_markdown import pkg
 from easy_to_markdown.pkg.format_table import (
-    Table, TableCell, compare_header, build_row_mapping, merge_rows)
+    Table, TableCell, compare_header, build_row_mapping, merge_rows, merge_table)
 from easy_to_markdown.generate.to_md import MarkdownFileResult
 
 
@@ -81,6 +81,10 @@ class FormatTable(unittest.TestCase):
             merge_rows_result = merge_rows(b_table.rows, compare_header_result, True)
             print(f"{merge_rows_result}")
             b_table.rows = merge_rows_result
+
+            result_table = merge_table([a_table, b_table])
+            print(result_table)
+            print(result_table.to_html())
 
 
 

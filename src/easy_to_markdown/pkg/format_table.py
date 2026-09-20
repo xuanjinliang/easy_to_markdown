@@ -4,7 +4,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Iterable
 import numpy as np
 import re
-from copy import deepcopy
 import logging
 from logging import NullHandler
 
@@ -23,6 +22,7 @@ class TableCell(BaseModel):
     colspan: int = Field(default=1, ge=1)
     tag: Literal["td", "th"] = "td"
     bbox: Optional[list[float]] = Field(default=None, min_length=4, max_length=4)
+    is_original_rowspan: bool = True
 
 
 class TableRow(BaseModel):
@@ -235,11 +235,11 @@ class Table(BaseModel):
         for i, cell in enumerate(cells):
             cell.col = int(
                 col_start[i]
-            ) + 1
+            )
 
             cell.row = int(
                 row_start[i]
-            ) + 1
+            )
 
             cell.colspan = int(
                 cols[i]
@@ -248,6 +248,16 @@ class Table(BaseModel):
             cell.rowspan = int(
                 rows[i]
             )
+
+        for row in self.rows:
+            if not row.cells:
+                continue
+
+            rowspans = {cell.rowspan for cell in row.cells}
+
+            if len(rowspans) == 1:
+                for cell in row.cells:
+                    cell.rowspan = 1
 
     def to_html(self) -> str:
         return HtmlTableRenderer().render(self)
@@ -802,13 +812,15 @@ def _merge_single_row(
     return result
 
 
-def _get_source_cells(logical_row: dict[int, tuple[TableCell, bool]], source_cols: tuple[int, ...]) -> list[TableCell]:
-    result: list[TableCell] = []
+def _get_source_cells(
+        logical_row: dict[int, tuple[TableCell, bool]], source_cols: tuple[int, ...]
+) -> list[tuple[TableCell, bool]]:
+    result: list[tuple[TableCell, bool]] = []
 
     seen: set[int] = set()
 
     for source_col in source_cols:
-        cell, _ = logical_row.get(source_col, (None, False))
+        cell, is_original = logical_row.get(source_col, (None, False))
         if cell is None:
             continue
 
@@ -818,29 +830,30 @@ def _get_source_cells(logical_row: dict[int, tuple[TableCell, bool]], source_col
             continue
 
         seen.add(cell_id)
-        result.append(cell)
+        result.append((cell, is_original))
 
     return result
 
 
-def _merge_source_cells(source_cells: list[TableCell], base_col: int) -> TableCell:
+def _merge_source_cells(source_cells: list[tuple[TableCell, bool]], base_col: int) -> TableCell:
     if not source_cells:
         raise ValueError(
             "source_cells cannot be empty."
         )
 
     if len(source_cells) == 1:
-        cell = source_cells[0]
+        cell, is_original_rowspan = source_cells[0]
 
         return _copy_cell(
             cell,
             col=base_col,
             colspan=1,
+            is_original_rowspan=is_original_rowspan,
         )
 
     source_cells = sorted(
         source_cells,
-        key=lambda cell: int(cell.col),
+        key=lambda cell: int(cell[0].col),
     )
 
     text = _merge_cell_text(source_cells)
@@ -848,10 +861,10 @@ def _merge_source_cells(source_cells: list[TableCell], base_col: int) -> TableCe
 
     rowspan = max(
         max(int(cell.rowspan), 1)
-        for cell in source_cells
+        for cell, _ in source_cells
     )
 
-    first = source_cells[0]
+    first, is_original_rowspan = source_cells[0]
 
     return _copy_cell(
         first,
@@ -860,13 +873,14 @@ def _merge_source_cells(source_cells: list[TableCell], base_col: int) -> TableCe
         colspan=1,
         rowspan=rowspan,
         bbox=bbox,
+        is_original_rowspan=is_original_rowspan
     )
 
 
-def _merge_cell_text(cells: Iterable[TableCell]) -> str:
+def _merge_cell_text(cells: list[tuple[TableCell, bool]]) -> str:
     texts: list[str] = []
 
-    for cell in cells:
+    for cell, _ in cells:
         text = cell.text
         text = str(text).strip()
 
@@ -879,11 +893,11 @@ def _merge_cell_text(cells: Iterable[TableCell]) -> str:
 
 
 def _merge_cell_bbox(
-        cells: Iterable[TableCell],
+        cells: list[tuple[TableCell, bool]],
 ) -> tuple[float, float, float, float] | None:
     bboxes = [
         cell.bbox
-        for cell in cells
+        for cell, _ in cells
         if cell.bbox is not None
     ]
 
@@ -926,9 +940,9 @@ def merge_rows(
     if not rows:
         return []
 
-    rows = rows[1:] if len(rows) > 1 and same_header else rows
+    # rows = rows[1:] if len(rows) > 1 and same_header else rows
     logical_rows = _build_logical_rows(rows)
-    result: list[TableRow] = []
+    results: list[TableRow] = []
     base_column_count = max(column_mapping)
 
     current_row: list[TableCell] | None = None
@@ -940,14 +954,14 @@ def merge_rows(
         single_row: list[TableCell] = [table_cell for table_cell, _ in logical_row.values()]
 
         if over:
-            result.append(TableRow(cells=single_row))
+            results.append(TableRow(cells=single_row))
             continue
 
         if current_row is None:
             current_row = single_row
         else:
             if not _rows_structure_similar(current_row, single_row):
-                result.append(TableRow(cells=single_row))
+                results.append(TableRow(cells=single_row))
                 over = True
                 continue
 
@@ -958,19 +972,69 @@ def merge_rows(
         )
 
         if merged_row:
-            result.append(TableRow(cells=merged_row))
+            # table_row: list[TableCell] = []
+            # for cell in merged_row:
+            #     if cell.is_original_rowspan:
+            #         table_row.append(cell)
 
-    return result
+            results.append(TableRow(cells=merged_row))
+
+    return results[1:] if len(results) > 1 and same_header else results
+
 
 def merge_table(table_list: list[Table]) -> Table | None:
     if len(table_list) == 0:
         return None
 
-    first = table_list[0]
-    width = first.width
-    height = first.height
+    first_table = table_list[0]
+    width = first_table.width
+    height = first_table.height
 
+    for table_item in table_list[1:]:
+        width = max(width, table_item.width)
 
+        all_bbox = [
+            cell.bbox
+            for rows in table_item.rows for cell in rows.cells
+            if cell.bbox is not None
+        ]
 
+        if all_bbox:
+            box_array = np.array(all_bbox)
+            max_y2 = np.max((box_array[:, 3]))
+            height = max(height, height + float(max_y2))
 
-    return table_list[0]
+        first_table.rows.extend(table_item.rows)
+
+    first_table.width = width
+    first_table.height = height
+
+    occupancy: list[TableRow] = [
+        TableRow(cells=[])
+        for _ in range(len(first_table.rows))
+    ]
+
+    max_cell_count = max(
+        (len(row.cells) for row in first_table.rows),
+        default=0,
+    )
+
+    for cell_index in range(max_cell_count):
+        current_cell: TableCell | None = None
+
+        for row_index, row in enumerate(first_table.rows):
+            if cell_index >= len(row.cells):
+                continue
+
+            cell = row.cells[cell_index]
+
+            if cell.is_original_rowspan:
+                current_cell = cell
+                occupancy[row_index].cells.append(cell)
+            else:
+                if current_cell is not None:
+                    current_cell.rowspan += 1
+
+    first_table.rows = occupancy
+
+    return first_table
