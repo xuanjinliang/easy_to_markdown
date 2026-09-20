@@ -75,8 +75,8 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             Path(os.path.join(output_dir, "pdf_image")).glob("page_*.webp"),
             key=lambda p: int(re.search(r'\d+', p.stem).group()))
 
-        webp_files = webp_files[:3]
-        # webp_files = [webp_files[2]]
+        webp_files = webp_files[:4]
+        # webp_files = [webp_files[3]]
         image_list = []
         for i, item in enumerate(webp_files):
             image_list.append(
@@ -85,6 +85,43 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
                     image_path=str(item),
                     width=1654,
                     height=2340
+                )
+            )
+
+        parsing_info = ParsingInfo(
+            image_list=image_list,
+            llm_conf=APIModelConfig(
+                model=self.model_path,
+                temperature=0,
+                base_url="http://localhost:8777/v1",
+                api_key="not-needed"
+            )
+        )
+        layout = LayoutParsing(parsing_info=parsing_info)
+        results = await layout.run(image_list=image_list, output_dir=output_dir)
+
+        json_data = [r.model_dump() for r in results]
+        json_str = json.dumps(
+            json_data,
+            ensure_ascii=False,
+            indent=2
+        )
+        with open(os.path.join(output_dir, "layout_result.json"), "w", encoding="utf-8") as f:
+            f.write(json_str)
+
+    async def test_layout_parsing_2(self):
+        output_dir = os.path.join(pkg.PdfTempDir, "excel")
+
+        webp_files = Path(os.path.join(output_dir, "pdf_image")).glob("*.png")
+
+        image_list = []
+        for i, item in enumerate(webp_files):
+            image_list.append(
+                ImageResponse(
+                    page_index=i,
+                    image_path=str(item),
+                    width=1278,
+                    height=642
                 )
             )
 

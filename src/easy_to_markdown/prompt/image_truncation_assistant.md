@@ -9,7 +9,7 @@ Your task is to analyze **Image 1 and Image 2** and determine whether the bounda
 3. Check the continuity of all types of content, including text, paragraphs, lists, tables, formulas, and other document elements.
 4. If the content in Image 1 ends normally and Image 2 simply starts with new content, return `false`.
 5. Even if the two images belong to the same document and are from consecutive pages, **do not return `true` merely because the pages are consecutive**.
-6. Even if a table has the same header, **do not assume that it is the same table based solely on the matching header**. You must determine whether the table in Image 2 is actually a continuation of the table in Image 1.
+6. If the two images contain a table with the **same header and consistent formatting**, return `true`.
 7. Return `true` only when there is **clear evidence that the same content continues across the boundary**. If the continuity cannot be confirmed, return `false`.
 
 ### Example 1: (truncated: true)
@@ -38,6 +38,28 @@ Image 2:
 
 ```text
 3. Financial Analysis
+```
+
+### Example 3: (truncated: true)
+
+Image 1:
+
+```text
+┌────────┬────────┐
+│ Name   │ Age    │
+├────────┼────────┤
+│ Tom    │ 20     │
+└────────┴────────┘
+```
+
+Image 2:
+
+```text
+┌────────┬────────┐
+│ Name   │ Age    │
+├────────┼────────┤
+│ Jack   │ 30     │
+└────────┴────────┘
 ```
 
 ### Output
