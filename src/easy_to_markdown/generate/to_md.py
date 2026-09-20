@@ -7,10 +7,11 @@ import shutil
 import numpy as np
 from PIL import Image
 from easy_to_markdown.pkg.enum_class import BlockType
-from easy_to_markdown.pkg.format_table import Table, TableCell
 from easy_to_markdown.generate import (FileParsingResult, ParsingResult, MarkdownInfo, MarkdownFileResult,
                                        ModelInfo, TableInfo, ImgMergeInfo)
 from easy_to_markdown.generate.set_block_content import SetBlockContent
+from easy_to_markdown.pkg.format_table import (
+    Table, TableCell, compare_header, build_row_mapping, merge_rows, merge_table)
 from pydantic import BaseModel
 
 
@@ -34,7 +35,8 @@ class MarkdownWriter:
             return
 
         for markdown_info in list_markdown_info:
-            self.write(markdown_info)
+            if markdown_info.merged_position is None:
+                self.write(markdown_info)
 
     def close(self):
         if not self.md_file.closed:
@@ -302,6 +304,7 @@ class MarkdownJsonWriter:
         if self.is_merge:
             markdown_file_result = self.generate_merge_image(markdown_file_result)
             markdown_file_result = await self.marge_paper(markdown_file_result)
+            recover_truncated_content(markdown_file_result)
 
         return markdown_file_result
 
@@ -315,10 +318,19 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
             continue
 
         page_index = item.merge_position
+
         first_page = children[page_index[0]]
         last_page = children[page_index[-1]]
         first_page_last_item = first_page[-1]
+
+        if first_page_last_item.merged_position is not None:
+            merged_page_index, merged_child_index = first_page_last_item.merged_position
+            first_page_last_item = children[merged_page_index][merged_child_index]
+
         last_page_first_item = last_page[0]
+        if last_page_first_item.merged_position is not None:
+            merged_page_index, merged_child_index = last_page_first_item.merged_position
+            last_page_first_item = children[merged_page_index][merged_child_index]
 
         if first_page_last_item.block_label_type != last_page_first_item.block_label_type:
             continue
@@ -331,11 +343,33 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
 
                 first_page_last_item.block_image_content += last_page_first_item.block_image_content
             case "table":
-                continue
+                if first_page_last_item.table_info is None or last_page_first_item.table_info is None:
+                    continue
+
+                a_table = first_page_last_item.table_info
+                b_table = last_page_first_item.table_info
+
+                compare_header_result = compare_header(a_table, b_table)
+                if compare_header_result is not None:
+                    merge_rows_result = merge_rows(b_table.rows, compare_header_result, True)
+                    b_table.rows = merge_rows_result
+                else:
+                    first_row = a_table.rows[0]
+                    last_row = a_table.rows[-1]
+                    row_mapping = build_row_mapping(first_row.cells, last_row.cells)
+                    if row_mapping is None:
+                        continue
+
+                    merge_rows_result = merge_rows(b_table.rows, row_mapping, False)
+                    b_table.rows = merge_rows_result
+
+                result_table = merge_table([a_table, b_table])
+                first_page_last_item.table_info = result_table
+                first_page_last_item.block_content = result_table.to_html()
             case _:
                 if (len(first_page_last_item.block_content) == 0 or
                         len(last_page_first_item.block_content) == 0):
                     continue
                 first_page_last_item.block_content += last_page_first_item.block_content
 
-        last_page_first_item.merged_position = [page_index[0], len(children[page_index[0]]) - 1]
+        last_page_first_item.merged_position = (page_index[0], len(children[page_index[0]]) - 1)

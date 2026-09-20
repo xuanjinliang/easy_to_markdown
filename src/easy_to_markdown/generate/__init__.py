@@ -95,7 +95,7 @@ class MarkdownInfo(BaseModel):
     block_content: str = ""
     block_image_content: Optional[str] = Field(default=None)
     table_info: Optional[Table] = None
-    merged_position: list[int] = []
+    merged_position: tuple[int, int] | None = None
 
 
 class ImgMergeInfo(ImageResponse):
