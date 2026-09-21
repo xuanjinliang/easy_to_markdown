@@ -2,7 +2,7 @@ from paddleocr import TableCellsDetection
 from typing import Literal, Any
 import os
 from easy_to_markdown import pkg
-from easy_to_markdown.pkg.common import ensure_dir, chunk_list
+from easy_to_markdown.pkg.common import ensure_dir, chunk_list, get_area, calc_overlap_ratio
 from easy_to_markdown.generate import FileParsingResult
 from easy_to_markdown.mode_interface.table import TablePosition
 from paddlex.inference.models.object_detection.result import DetResult
@@ -152,54 +152,47 @@ class TableStructureRecognition:
         return [item for item in table_content if not item.get("remove", False)]
 
     @staticmethod
-    def calc_overlap_ratio(block1: dict[str, Any], block2: dict[str, Any]) -> tuple[float, float, float]:
-        box1 = block1.get("coordinate", [0, 0, 0, 0])
-        box2 = block2.get("coordinate", [0, 0, 0, 0])
+    def _get_area(block: dict[str, Any]) -> float:
+        bbox = block.get("coordinate", [0, 0, 0, 0])
+        return get_area(bbox)
 
-        x1 = max(box1[0], box2[0])
-        y1 = max(box1[1], box2[1])
-        x2 = min(box1[2], box2[2])
-        y2 = min(box1[3], box2[3])
-
-        if x2 <= x1 or y2 <= y1:
-            return 0.0, 0.0, 0.0
-
-        intersection = (
-                (x2 - x1) *
-                (y2 - y1)
-        )
-
-        area1 = (
-                (box1[2] - box1[0]) *
-                (box1[3] - box1[1])
-        )
-
-        area2 = (
-                (box2[2] - box2[0]) *
-                (box2[3] - box2[1])
-        )
-
-        return intersection / min(area1, area2), area1, area2
+    @staticmethod
+    def _calc_overlap_ratio(block1: dict[str, Any], block2: dict[str, Any]) -> float:
+        bbox1 = block1.get("coordinate", [0, 0, 0, 0])
+        bbox2 = block2.get("coordinate", [0, 0, 0, 0])
+        return calc_overlap_ratio(bbox1, bbox2)
 
     def filter_overlap_by_area(self, table_content: list[dict[str, Any]], threshold: float = 0.8):
         if len(table_content) < 2:
             return
 
-        keep_block = None
-        for block in table_content:
-            if block.get("remove", False):
-                continue
+        blocks = [
+            block
+            for block in table_content
+            if not block.get("remove", False)
+        ]
 
-            if keep_block is None:
-                keep_block = block
-                continue
+        blocks.sort(
+            key=lambda block: self._get_area(block),
+            reverse=True,
+        )
 
-            ratio, are1, are2 = self.calc_overlap_ratio(keep_block, block)
-            if ratio < threshold:
-                continue
+        kept_blocks = []
 
-            if are1 > are2:
+        for block in blocks:
+            should_remove = False
+
+            for kept_block in kept_blocks:
+                ratio = self._calc_overlap_ratio(
+                    kept_block,
+                    block,
+                )
+
+                if ratio >= threshold:
+                    should_remove = True
+                    break
+
+            if should_remove:
                 block["remove"] = True
             else:
-                keep_block["remove"] = True
-                keep_block = block
+                kept_blocks.append(block)

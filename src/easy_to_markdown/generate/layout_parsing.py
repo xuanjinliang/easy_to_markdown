@@ -49,9 +49,8 @@ class ParsingInfo(BaseModel):
 class LayoutParsing:
     def __init__(self, parsing_info: ParsingInfo):
         max_workers = parsing_info.max_workers
-
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.infer_semaphore = asyncio.Semaphore(max_workers)
+        # self.infer_semaphore = asyncio.Semaphore(max_workers)
         self.pipeline_lock = asyncio.Lock()
         self.parsing_info = parsing_info
 
@@ -224,7 +223,7 @@ class LayoutParsing:
         loop = asyncio.get_running_loop()
 
         # print(f"image_list -> {image_list}")
-        async with self.infer_semaphore:
+        async with self.pipeline_lock:
             results = await loop.run_in_executor(
                 self.executor,
                 self.cell_inference,
@@ -269,7 +268,7 @@ class LayoutParsing:
         output_dir = Path(table_info.img_output_dir).parent
         tasks = []
 
-        for batch in chunk_list(img_path_list, 2):
+        for batch in chunk_list(img_path_list, 4):
             task = asyncio.create_task(
                 self.table_cell_handle(batch, str(output_dir), table_info.width, table_info.height)
             )
@@ -474,7 +473,7 @@ class LayoutParsing:
                                  output_dir: str) -> list[FileParsingResult]:
         loop = asyncio.get_running_loop()
 
-        async with self.infer_semaphore:
+        async with self.pipeline_lock:
             results = await loop.run_in_executor(
                 self.executor,
                 self.inference,

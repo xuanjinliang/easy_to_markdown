@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-from easy_to_markdown.pkg.common import ensure_dir
+from easy_to_markdown.pkg.common import ensure_dir, get_area, calc_overlap_ratio
+from easy_to_markdown.pkg.coordinate_overlap import get_overlap_result_np
 from easy_to_markdown.pkg.label_normalization import map_paddle_label
 from easy_to_markdown.pkg.draw_label import BboxLabel, DrawImageLabel, draw_labels
 from easy_to_markdown.generate import CellInfo, TableInfo, RowInfo, ColumnsInfo, ParsingResult, ImageResponse
@@ -429,7 +430,7 @@ def format_table_info(
         table_list.append(row_info)
 
     table_info.table_list = table_list
-    return table_info
+    return remove_repeat_rows(table_info)
 
 
 def clean_cell_detections(
@@ -625,3 +626,67 @@ def table_cell_category(
         return "formula"
 
     return "text"
+
+
+def _get_area(block: RowInfo) -> float:
+    return get_area(block.bbox)
+
+
+def _calc_overlap_ratio(block1: RowInfo, block2: RowInfo) -> float:
+    return calc_overlap_ratio(block1.bbox, block2.bbox)
+
+
+def filter_overlap_by_area(row_info: list[RowInfo], threshold: float = 0.8):
+    if len(row_info) < 2:
+        return
+
+    blocks.sort(
+        key=lambda block: _get_area(block),
+        reverse=True,
+    )
+
+    kept_blocks = []
+
+    for block in blocks:
+        should_remove = False
+
+        for kept_block in kept_blocks:
+            ratio = _calc_overlap_ratio(
+                kept_block,
+                block,
+            )
+
+            if ratio >= threshold:
+                should_remove = True
+                break
+
+        if should_remove:
+            block.remove = True
+        else:
+            kept_blocks.append(block)
+
+
+def remove_repeat_rows(table_info: TableInfo) -> TableInfo:
+    if len(table_info.table_list) == 0:
+        return table_info
+
+    rows = table_info.table_list
+    bbox_list = [item.bbox for item in rows]
+    overlap_result = get_overlap_result_np(bbox_list, no_duplicate=True)
+
+    for item in overlap_result:
+        if len(item.overlap) == 0:
+            continue
+
+        filter_overlap_by_area(
+            row_info=[rows[item.index]] + [rows[index] for index in item.overlap]
+        )
+
+    new_rows = [
+        row
+        for row in rows
+        if not row.remove
+    ]
+
+    table_info.table_list = new_rows
+    return table_info

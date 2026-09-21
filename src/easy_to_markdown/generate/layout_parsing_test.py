@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):
-    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
 
     async def test_layout_parsing(self):
         output_dir = os.path.join(pkg.PdfTempDir, "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c")
@@ -75,8 +75,8 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             Path(os.path.join(output_dir, "pdf_image")).glob("page_*.webp"),
             key=lambda p: int(re.search(r'\d+', p.stem).group()))
 
-        webp_files = webp_files[:4]
-        # webp_files = [webp_files[3]]
+        # webp_files = webp_files[:5]
+        webp_files = [webp_files[4]]
         image_list = []
         for i, item in enumerate(webp_files):
             image_list.append(

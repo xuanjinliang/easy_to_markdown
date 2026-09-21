@@ -66,6 +66,7 @@ class ColumnsInfo(ContainerInfo):
 
 class RowInfo(ContainerInfo):
     rows_list: list[ColumnsInfo] = []
+    remove: bool = False
 
 
 class TableInfo(ContainerInfo):
