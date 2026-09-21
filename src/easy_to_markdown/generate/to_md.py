@@ -122,6 +122,7 @@ class MarkdownJsonWriter:
         for rows in table_info.table_list:
             table_cell: list[TableCell] = []
             table_rows_extra = []
+            rows_bbox = rows.bbox
             for cell in rows.rows_list:
                 if cell.columns_blocks is not None:
                     blocks = cell.columns_blocks.blocks
@@ -132,18 +133,15 @@ class MarkdownJsonWriter:
                         if cell_table_info is not None:
                             row_cell_list = self.set_only_table_cell(table_info=cell_table_info)
 
-                            last_bbox = None
-                            if len(table_cell) > 0:
-                                last_bbox = table_cell[-1].bbox
 
-                            if last_bbox is not None and len(last_bbox) == 4:
+                            if rows_bbox is not None and len(rows_bbox) == 4:
                                 for rows_i in row_cell_list:
                                     for cell in rows_i:
                                         bbox = cell.bbox
-                                        bbox[0] += last_bbox[2]
-                                        bbox[2] += last_bbox[2]
-                                        bbox[1] += last_bbox[1]
-                                        bbox[3] += last_bbox[1]
+                                        bbox[0] += rows_bbox[0]
+                                        bbox[2] += rows_bbox[0]
+                                        bbox[1] += rows_bbox[1]
+                                        bbox[3] += rows_bbox[1]
                                         cell.bbox = bbox
 
                             if len(row_cell_list) > 0:
@@ -163,6 +161,8 @@ class MarkdownJsonWriter:
 
                 content = cell.block_content.content if cell.block_content is not None else ""
                 table_cell.append(TableCell(text=content, bbox=cell.bbox))
+
+
 
             if len(table_cell) > 0:
                 rows_list.append(table_cell)
