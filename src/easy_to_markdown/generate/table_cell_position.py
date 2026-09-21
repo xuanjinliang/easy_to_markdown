@@ -640,14 +640,14 @@ def filter_overlap_by_area(row_info: list[RowInfo], threshold: float = 0.8):
     if len(row_info) < 2:
         return
 
-    blocks.sort(
-        key=lambda block: _get_area(block),
+    row_info.sort(
+        key=lambda row: _get_area(row),
         reverse=True,
     )
 
     kept_blocks = []
 
-    for block in blocks:
+    for block in row_info:
         should_remove = False
 
         for kept_block in kept_blocks:
