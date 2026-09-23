@@ -235,11 +235,11 @@ class Table(BaseModel):
         for i, cell in enumerate(cells):
             cell.col = int(
                 col_start[i]
-            )
+            ) + 1
 
             cell.row = int(
                 row_start[i]
-            )
+            ) + 1
 
             cell.colspan = int(
                 cols[i]

@@ -118,10 +118,10 @@ class MarkdownJsonWriter:
         if len(table_info.table_list) == 0:
             return []
 
-        rows_list = []
+        rows_list: list[list[TableCell]] = []
         for rows in table_info.table_list:
             table_cell: list[TableCell] = []
-            table_rows_extra = []
+            table_rows_extra: list[list[TableCell]] = []
             rows_bbox = rows.bbox
             for cell in rows.rows_list:
                 if cell.columns_blocks is not None:
@@ -132,7 +132,6 @@ class MarkdownJsonWriter:
                         cell_table_info = blocks[0].table_info
                         if cell_table_info is not None:
                             row_cell_list = self.set_only_table_cell(table_info=cell_table_info)
-
 
                             if rows_bbox is not None and len(rows_bbox) == 4:
                                 for rows_i in row_cell_list:
@@ -146,7 +145,7 @@ class MarkdownJsonWriter:
 
                             if len(row_cell_list) > 0:
                                 table_cell += row_cell_list[0]
-                                table_rows_extra.append(row_cell_list[1:])
+                                table_rows_extra = row_cell_list[1:]
                             continue
 
                     for block in blocks:
@@ -162,15 +161,19 @@ class MarkdownJsonWriter:
                 content = cell.block_content.content if cell.block_content is not None else ""
                 table_cell.append(TableCell(text=content, bbox=cell.bbox))
 
-
-
             if len(table_cell) > 0:
                 rows_list.append(table_cell)
 
             if len(table_rows_extra) > 0:
-                for item_list in table_rows_extra:
-                    for row in item_list:
-                        rows_list.append(row)
+                for row in table_rows_extra:
+                    rows_list.append(row)
+
+            if len(rows_list) > 0:
+                last_row = rows_list[-1]
+                for cell in last_row:
+                    bbox = cell.bbox
+                    if bbox is not None and bbox[3] < rows_bbox[3]:
+                        bbox[3] = rows_bbox[3]
 
         return rows_list
 
@@ -178,7 +181,13 @@ class MarkdownJsonWriter:
         if len(table_info.table_list) == 0:
             return None
 
-        table = Table(width=table_info.width, height=table_info.height)
+        table_bbox = table_info.bbox
+        table = Table(
+            width=table_info.width,
+            height=table_info.height,
+            origin_x=table_bbox[0],
+            origin_y=table_bbox[1],
+        )
 
         rows_list = self.set_only_table_cell(table_info)
         for table_cell in rows_list:
