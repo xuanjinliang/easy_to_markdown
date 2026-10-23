@@ -1029,7 +1029,8 @@ def merge_table(table_list: list[Table]) -> Table | None:
             cell = row.cells[cell_index]
 
             if cell.is_original_rowspan:
-                current_cell = cell
+                if current_cell is None or cell.col == current_cell.col:
+                    current_cell = cell
                 occupancy[row_index].cells.append(cell)
             else:
                 if current_cell is not None:
