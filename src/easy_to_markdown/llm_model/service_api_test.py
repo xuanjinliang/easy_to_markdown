@@ -12,7 +12,7 @@ class Description(BaseModel):
 
 class TestLayoutModel(unittest.IsolatedAsyncioTestCase):
     async def test_service_api_schema(self):
-        model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+        model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
         llm_service_api = LLMServiceApi(config=APIModelConfig(
             model=model_path,
             temperature=0,

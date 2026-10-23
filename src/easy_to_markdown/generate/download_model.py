@@ -70,8 +70,8 @@ def optional_model_config() -> dict[str, list[dict[str, str]]]:
         ],
         "mlx": [
             {
-                "repo_id": "mlx-community/Qwen3-VL-4B-Instruct-8bit",
-                "filename": "qwen_mlx/Qwen3-VL-4B-Instruct-8bit",
+                "repo_id": "mlx-community/Qwen3-VL-8B-Instruct-8bit",
+                "filename": "qwen_mlx/Qwen3-VL-8B-Instruct-8bit",
             }
         ]
     }

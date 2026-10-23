@@ -9,7 +9,7 @@ from easy_to_markdown.llm_model import APIModelConfig
 
 
 class ToMarkdown(unittest.IsolatedAsyncioTestCase):
-    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
 
     async def test_markdown_json_writer1(self):
         file_dir = os.path.join(pkg.PdfTempDir, "aws_2024_cdn_24083b34-766a-48ad-9cdc-851744b1085c")

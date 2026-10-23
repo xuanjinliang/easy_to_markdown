@@ -119,7 +119,7 @@ Output **only the corrected text in the natural reading order**, without any add
         print(f"result --> {output_text}")
 
     def test_qwen3_vl_mlx_vlm(self):
-        model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+        model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
         model, processor = load(model_path)
         config = model.config
 
@@ -209,7 +209,7 @@ Output **only the corrected text in the natural reading order**, without any add
         print(results)
 
     async def test_qwen_mlx_model_schema(self):
-        model_path = os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-4B-Instruct-8bit")
+        model_path = os.path.join(pkg.ModelDir, "qwen", "Qwen3-VL-8B-Instruct-8bit")
         qwen_mlx_model = QwenMlxModel(config=LocalModelConfig(
             model_path=model_path,
             temperature=0

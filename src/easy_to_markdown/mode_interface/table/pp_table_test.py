@@ -10,7 +10,7 @@ from easy_to_markdown.llm_model import APIModelConfig
 
 
 class TestPPTable(unittest.IsolatedAsyncioTestCase):
-    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
 
     async def test_pp_table_classification(self):
         dir_path = Path(os.path.join(pkg.PdfTempDir, 'aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159', 'crops_img'))

@@ -9,7 +9,7 @@ from easy_to_markdown.llm_model import APIModelConfig
 
 
 class TestPPOcr(unittest.IsolatedAsyncioTestCase):
-    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
 
     async def test_table_classification(self):
         path_obj = os.path.join(pkg.PromptDir, "table_classification.md")

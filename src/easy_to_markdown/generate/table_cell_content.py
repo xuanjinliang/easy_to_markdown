@@ -23,7 +23,8 @@ class TableCellOCRContent:
 
         self.max_retry = max_retry
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.infer_semaphore = asyncio.Semaphore(max_workers)
+        # self.infer_semaphore = asyncio.Semaphore(max_workers)
+        self.pipeline_lock = asyncio.Lock()
 
     def cell_inference(self, image_list: list[str]) -> list[list[list[float]]]:
 
@@ -47,7 +48,8 @@ class TableCellOCRContent:
 
         loop = asyncio.get_running_loop()
 
-        async with self.infer_semaphore:
+        # async with self.infer_semaphore:
+        async with self.pipeline_lock:
             results = await loop.run_in_executor(
                 self.executor,
                 self.cell_inference,

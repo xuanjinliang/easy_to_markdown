@@ -13,7 +13,7 @@ class Description(BaseModel):
 
 
 class TestLayout(unittest.IsolatedAsyncioTestCase):
-    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-4B-Instruct-8bit")
+    model_path = os.path.join(pkg.ModelDir, "qwen_mlx", "Qwen3-VL-8B-Instruct-8bit")
 
     async def test_set_block_content(self):
         llm_model = SetBlockContent(llm_conf=APIModelConfig(
