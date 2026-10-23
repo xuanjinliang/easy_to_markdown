@@ -129,6 +129,7 @@ class MarkdownJsonWriter:
                     blocks = cell.columns_blocks.blocks
                     content = ""
                     cell_box = cell.bbox
+                    cell_crop_info = cell.crop_info.bbox
 
                     if len(blocks) == 1 and blocks[0].block_label_type == "table":
                         cell_table_info = blocks[0].table_info
@@ -138,10 +139,10 @@ class MarkdownJsonWriter:
                             for rows_i in row_cell_list:
                                 for cell in rows_i:
                                     bbox = cell.bbox
-                                    bbox[0] += cell_box[0]
-                                    bbox[2] += cell_box[0]
-                                    bbox[1] += cell_box[1]
-                                    bbox[3] += cell_box[1]
+                                    bbox[0] += cell_box[0] + cell_crop_info[0]
+                                    bbox[2] += cell_box[0] + cell_crop_info[0]
+                                    bbox[1] += cell_box[1] + cell_crop_info[1]
+                                    bbox[3] += cell_box[1] + cell_crop_info[1]
                                     cell.bbox = bbox
 
                             if len(row_cell_list) > 0:
@@ -323,14 +324,26 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
     img_info = markdown_file_result.img_info
     children = markdown_file_result.children
 
+    record_merge_page = {}
+
     for index, item in enumerate(img_info):
         if len(item.merge_position) <= 1:
             continue
 
         page_index = item.merge_position
+        first_index = page_index[0]
+        last_index = page_index[-1]
 
-        first_page = children[page_index[0]]
-        last_page = children[page_index[-1]]
+        if first_index in record_merge_page:
+            record_merge_page[last_index] = record_merge_page[first_index]
+        else:
+            record_merge_page[last_index] = first_index
+
+        first_index = record_merge_page[last_index]
+
+        first_page = children[first_index]
+        last_page = children[last_index]
+
         first_page_last_item = first_page[-1]
 
         if first_page_last_item.merged_position is not None:
