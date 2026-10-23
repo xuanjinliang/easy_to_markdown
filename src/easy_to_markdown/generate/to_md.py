@@ -123,25 +123,26 @@ class MarkdownJsonWriter:
             table_cell: list[TableCell] = []
             table_rows_extra: list[list[TableCell]] = []
             rows_bbox = rows.bbox
+
             for cell in rows.rows_list:
                 if cell.columns_blocks is not None:
                     blocks = cell.columns_blocks.blocks
                     content = ""
+                    cell_box = cell.bbox
 
                     if len(blocks) == 1 and blocks[0].block_label_type == "table":
                         cell_table_info = blocks[0].table_info
                         if cell_table_info is not None:
                             row_cell_list = self.set_only_table_cell(table_info=cell_table_info)
 
-                            if rows_bbox is not None and len(rows_bbox) == 4:
-                                for rows_i in row_cell_list:
-                                    for cell in rows_i:
-                                        bbox = cell.bbox
-                                        bbox[0] += rows_bbox[0]
-                                        bbox[2] += rows_bbox[0]
-                                        bbox[1] += rows_bbox[1]
-                                        bbox[3] += rows_bbox[1]
-                                        cell.bbox = bbox
+                            for rows_i in row_cell_list:
+                                for cell in rows_i:
+                                    bbox = cell.bbox
+                                    bbox[0] += cell_box[0]
+                                    bbox[2] += cell_box[0]
+                                    bbox[1] += cell_box[1]
+                                    bbox[3] += cell_box[1]
+                                    cell.bbox = bbox
 
                             if len(row_cell_list) > 0:
                                 table_cell += row_cell_list[0]
