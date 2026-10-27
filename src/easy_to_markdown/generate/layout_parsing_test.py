@@ -76,7 +76,7 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
             key=lambda p: int(re.search(r'\d+', p.stem).group()))
 
         webp_files = webp_files[:5]
-        # webp_files = [webp_files[1]]
+        # webp_files = [webp_files[4]]
         image_list = []
         for i, item in enumerate(webp_files):
             image_list.append(

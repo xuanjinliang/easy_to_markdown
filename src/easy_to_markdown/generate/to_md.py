@@ -136,13 +136,35 @@ class MarkdownJsonWriter:
                         if cell_table_info is not None:
                             row_cell_list = self.set_only_table_cell(table_info=cell_table_info)
 
-                            for rows_i in row_cell_list:
-                                for cell in rows_i:
+                            for j, rows_i in enumerate(row_cell_list):
+                                is_first_row = j == 0
+                                is_last_row = j == len(row_cell_list) - 1
+
+                                for i, cell in enumerate(rows_i):
+                                    is_first = i == 0
+                                    is_last = i == len(rows_i) - 1
                                     bbox = cell.bbox
-                                    bbox[0] += cell_box[0] + cell_crop_info[0]
-                                    bbox[2] += cell_box[0] + cell_crop_info[0]
-                                    bbox[1] += cell_box[1] + cell_crop_info[1]
-                                    bbox[3] += cell_box[1] + cell_crop_info[1]
+
+                                    if is_first:
+                                        bbox[0] = cell_box[0]
+                                    else:
+                                        bbox[0] += cell_box[0] - cell_crop_info[0]
+
+                                    if is_last:
+                                        bbox[2] = cell_box[2]
+                                    else:
+                                        bbox[2] += cell_box[0] - cell_crop_info[0]
+
+                                    if is_first_row:
+                                        bbox[1] = cell_box[1]
+                                    else:
+                                        bbox[1] += cell_box[1] + cell_crop_info[1]
+
+                                    if is_last_row:
+                                        bbox[3] = cell_box[3]
+                                    else:
+                                        bbox[3] += cell_box[1] + cell_crop_info[1]
+
                                     cell.bbox = bbox
 
                             if len(row_cell_list) > 0:

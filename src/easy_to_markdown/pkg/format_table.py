@@ -945,25 +945,25 @@ def merge_rows(
     results: list[TableRow] = []
     base_column_count = max(column_mapping)
 
-    current_row: list[TableCell] | None = None
-    over = False
+    # current_row: list[TableCell] | None = None
+    # over = False
     for logical_row in logical_rows:
         if _is_rowspan_only_row(logical_row):
             continue
 
-        single_row: list[TableCell] = [table_cell for table_cell, _ in logical_row.values()]
-
-        if over:
-            results.append(TableRow(cells=single_row))
-            continue
-
-        if current_row is None:
-            current_row = single_row
-        else:
-            if not _rows_structure_similar(current_row, single_row):
-                results.append(TableRow(cells=single_row))
-                over = True
-                continue
+        # single_row: list[TableCell] = [table_cell for table_cell, _ in logical_row.values()]
+        #
+        # if over:
+        #     results.append(TableRow(cells=single_row))
+        #     continue
+        #
+        # if current_row is None:
+        #     current_row = single_row
+        # else:
+        #     if not _rows_structure_similar(current_row, single_row):
+        #         results.append(TableRow(cells=single_row))
+        #         over = True
+        #         continue
 
         merged_row = _merge_single_row(
             logical_row=logical_row,
