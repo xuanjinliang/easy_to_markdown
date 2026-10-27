@@ -168,7 +168,7 @@ class Table(BaseModel):
         if np.any(
                 min_distance > tolerance
         ):
-            raise ValueError(
+            logger.error(
                 "Some bbox coordinates cannot "
                 "be mapped to table grid"
             )
