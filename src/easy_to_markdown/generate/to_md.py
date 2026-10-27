@@ -145,25 +145,14 @@ class MarkdownJsonWriter:
                                     is_last = i == len(rows_i) - 1
                                     bbox = cell.bbox
 
-                                    if is_first:
-                                        bbox[0] = cell_box[0]
-                                    else:
-                                        bbox[0] += cell_box[0] - cell_crop_info[0]
+                                    x_offset = cell_box[0] - cell_crop_info[0]
+                                    y_offset = cell_box[1] + cell_crop_info[1]
 
-                                    if is_last:
-                                        bbox[2] = cell_box[2]
-                                    else:
-                                        bbox[2] += cell_box[0] - cell_crop_info[0]
+                                    bbox[0] = cell_box[0] if is_first else bbox[0] + x_offset
+                                    bbox[2] = cell_box[2] if is_last else bbox[2] + x_offset
 
-                                    if is_first_row:
-                                        bbox[1] = cell_box[1]
-                                    else:
-                                        bbox[1] += cell_box[1] + cell_crop_info[1]
-
-                                    if is_last_row:
-                                        bbox[3] = cell_box[3]
-                                    else:
-                                        bbox[3] += cell_box[1] + cell_crop_info[1]
+                                    bbox[1] = cell_box[1] if is_first_row else bbox[1] + y_offset
+                                    bbox[3] = cell_box[3] if is_last_row else bbox[3] + y_offset
 
                                     cell.bbox = bbox
 

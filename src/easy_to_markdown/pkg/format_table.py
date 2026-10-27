@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Iterable
 import numpy as np
 import re
+import copy
 import logging
 from logging import NullHandler
 
@@ -785,12 +786,22 @@ def _merge_single_row(
 ) -> list[TableCell]:
     result: list[TableCell] = []
 
+
+    new_column_mapping = copy.deepcopy(column_mapping)
+    logical_row_keys = logical_row.keys()
+    column_mapping_keys = column_mapping.keys()
+    if len(logical_row_keys) > len(column_mapping_keys):
+        extra_keys = logical_row_keys - column_mapping_keys
+        last_key = next(reversed(column_mapping))
+        new_column_mapping[last_key] += tuple(sorted(extra_keys))
+
+
     for base_col in range(
             1,
             base_column_count + 1,
     ):
 
-        source_cols = column_mapping.get(base_col)
+        source_cols = new_column_mapping.get(base_col)
         if not source_cols:
             continue
 
@@ -837,9 +848,7 @@ def _get_source_cells(
 
 def _merge_source_cells(source_cells: list[tuple[TableCell, bool]], base_col: int) -> TableCell:
     if not source_cells:
-        raise ValueError(
-            "source_cells cannot be empty."
-        )
+        return TableCell()
 
     if len(source_cells) == 1:
         cell, is_original_rowspan = source_cells[0]
