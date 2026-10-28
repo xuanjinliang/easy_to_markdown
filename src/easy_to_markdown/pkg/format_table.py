@@ -1029,13 +1029,10 @@ def merge_table(table_list: list[Table]) -> Table | None:
         default=0,
     )
 
-    row_mapping_list: list[dict[int, TableCell]] = []
-    for row in first_table.rows:
-        obj = {}
-        for cell in row.cells:
-            obj[cell.col] = cell
-
-        row_mapping_list.append(obj)
+    row_mapping_list: list[dict[int, TableCell]] = [
+        {cell.col: cell for cell in row.cells}
+        for row in first_table.rows
+    ]
 
     for cell_index in range(max_cell_count):
         current_cell: TableCell | None = None
