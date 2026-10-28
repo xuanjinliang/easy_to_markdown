@@ -1,6 +1,6 @@
 from __future__ import annotations
 from lxml import etree
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal, Iterable
 import numpy as np
 import re
@@ -14,7 +14,10 @@ logger.addHandler(NullHandler())
 
 class TableCell(BaseModel):
     model_config = ConfigDict(
+        strict=True,
         validate_assignment=True,
+        extra="forbid",
+        validate_default=True,
     )
     text: str = ""
     row: int = Field(default=0, ge=0)
@@ -786,7 +789,6 @@ def _merge_single_row(
 ) -> list[TableCell]:
     result: list[TableCell] = []
 
-
     new_column_mapping = copy.deepcopy(column_mapping)
     logical_row_keys = logical_row.keys()
     column_mapping_keys = column_mapping.keys()
@@ -794,7 +796,6 @@ def _merge_single_row(
         extra_keys = logical_row_keys - column_mapping_keys
         last_key = next(reversed(column_mapping))
         new_column_mapping[last_key] += tuple(sorted(extra_keys))
-
 
     for base_col in range(
             1,
@@ -903,7 +904,7 @@ def _merge_cell_text(cells: list[tuple[TableCell, bool]]) -> str:
 
 def _merge_cell_bbox(
         cells: list[tuple[TableCell, bool]],
-) -> tuple[float, float, float, float] | None:
+) -> list[float] | None:
     bboxes = [
         cell.bbox
         for cell, _ in cells
@@ -933,7 +934,7 @@ def _merge_cell_bbox(
         for bbox in bboxes
     )
 
-    return x1, y1, x2, y2
+    return [x1, y1, x2, y2]
 
 
 def _copy_cell(cell: TableCell, **changes) -> TableCell:
@@ -1028,22 +1029,36 @@ def merge_table(table_list: list[Table]) -> Table | None:
         default=0,
     )
 
+    row_mapping_list: list[dict[int, TableCell]] = []
+    for row in first_table.rows:
+        obj = {}
+        for cell in row.cells:
+            obj[cell.col] = cell
+
+        row_mapping_list.append(obj)
+
     for cell_index in range(max_cell_count):
         current_cell: TableCell | None = None
 
-        for row_index, row in enumerate(first_table.rows):
-            if cell_index >= len(row.cells):
-                continue
-
-            cell = row.cells[cell_index]
-
-            if cell.is_original_rowspan:
-                if current_cell is None or cell.col == current_cell.col:
+        for row_index, row_obj in enumerate(row_mapping_list):
+            cell_col_index = cell_index + 1
+            if cell_col_index in row_obj:
+                cell = row_obj[cell_col_index]
+                if cell.is_original_rowspan and (current_cell is None or cell.col == current_cell.col):
+                    if isinstance(cell.bbox, tuple):
+                        print(
+                            f"merge_table 中发现 tuple bbox: "
+                            f"row={cell.row}, col={cell.col}, bbox={cell.bbox!r}"
+                        )
+                        breakpoint()
+                    cell.rowspan = 1
+                    cell.row = row_index + 1
                     current_cell = cell
-                occupancy[row_index].cells.append(cell)
-            else:
-                if current_cell is not None:
-                    current_cell.rowspan += 1
+                    occupancy[row_index].cells.append(cell)
+                    continue
+
+            if current_cell is not None:
+                current_cell.rowspan += 1
 
     first_table.rows = occupancy
 
