@@ -986,8 +986,15 @@ def merge_rows(
             # for cell in merged_row:
             #     if cell.is_original_rowspan:
             #         table_row.append(cell)
-
             results.append(TableRow(cells=merged_row))
+
+    # if same_header:
+    #     for rows in results:
+    #         for cell in rows.cells:
+    #             if cell.text.strip() == "":
+    #                 cell.is_original_rowspan = False
+    #             else:
+    #                 break
 
     return results[1:] if len(results) > 1 and same_header else results
 
