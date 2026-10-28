@@ -1045,12 +1045,6 @@ def merge_table(table_list: list[Table]) -> Table | None:
             if cell_col_index in row_obj:
                 cell = row_obj[cell_col_index]
                 if cell.is_original_rowspan and (current_cell is None or cell.col == current_cell.col):
-                    if isinstance(cell.bbox, tuple):
-                        print(
-                            f"merge_table 中发现 tuple bbox: "
-                            f"row={cell.row}, col={cell.col}, bbox={cell.bbox!r}"
-                        )
-                        breakpoint()
                     cell.rowspan = 1
                     cell.row = row_index + 1
                     current_cell = cell
