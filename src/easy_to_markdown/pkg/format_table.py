@@ -703,7 +703,7 @@ def _rows_structure_similar(
     return True
 
 
-def _build_logical_rows(rows: list[TableRow]) -> list[dict[int, tuple[TableCell, bool]]]:
+def _build_logical_rows(rows: list[TableRow]) -> list[dict[int, TableCell]]:
     if not rows:
         return []
 
@@ -721,8 +721,7 @@ def _build_logical_rows(rows: list[TableRow]) -> list[dict[int, tuple[TableCell,
     if max_row <= 0:
         return []
 
-    # tuple[TableCell, bool] --> table_cell, is_origin
-    occupancy: list[dict[int, tuple[TableCell, bool]]] = [
+    occupancy: list[dict[int, TableCell]] = [
         {}
         for _ in range(max_row + 1)
     ]
@@ -767,23 +766,24 @@ def _build_logical_rows(rows: list[TableRow]) -> list[dict[int, tuple[TableCell,
                     )
 
                 for logical_col in range(start_col, start_col + colspan):
-                    occupancy[logical_row][logical_col] = (cell, logical_row == cell.row)
+                    cell.is_original_rowspan = logical_row == cell.row
+                    occupancy[logical_row][logical_col] = cell
 
     return occupancy[1:]
 
 
-def _is_rowspan_only_row(row: dict[int, tuple[TableCell, bool]]) -> bool:
+def _is_rowspan_only_row(row: dict[int, TableCell]) -> bool:
     if not row:
         return False
 
     return all(
-        not is_new_cell
-        for _, is_new_cell in row.values()
+        not cell.is_original_rowspan
+        for cell in row.values()
     )
 
 
 def _merge_single_row(
-        logical_row: dict[int, tuple[TableCell, bool]],
+        logical_row: dict[int, TableCell],
         column_mapping: dict[int, tuple[int, ...]],
         base_column_count: int,
 ) -> list[TableCell]:
@@ -791,11 +791,20 @@ def _merge_single_row(
 
     new_column_mapping = copy.deepcopy(column_mapping)
     logical_row_keys = logical_row.keys()
-    column_mapping_keys = column_mapping.keys()
-    if len(logical_row_keys) > len(column_mapping_keys):
-        extra_keys = logical_row_keys - column_mapping_keys
-        last_key = next(reversed(column_mapping))
-        new_column_mapping[last_key] += tuple(sorted(extra_keys))
+
+    mapped_columns = set(
+        col
+        for columns in column_mapping.values()
+        for col in columns
+    )
+
+    if len(logical_row_keys) > len(mapped_columns):
+        extra_keys = logical_row_keys - mapped_columns
+        if extra_keys:
+            last_key = next(reversed(column_mapping))
+            new_column_mapping[last_key] = tuple(
+                sorted(set(column_mapping[last_key]) | extra_keys)
+            )
 
     for base_col in range(
             1,
@@ -825,14 +834,14 @@ def _merge_single_row(
 
 
 def _get_source_cells(
-        logical_row: dict[int, tuple[TableCell, bool]], source_cols: tuple[int, ...]
-) -> list[tuple[TableCell, bool]]:
-    result: list[tuple[TableCell, bool]] = []
+        logical_row: dict[int, TableCell], source_cols: tuple[int, ...]
+) -> list[TableCell]:
+    result: list[TableCell] = []
 
     seen: set[int] = set()
 
     for source_col in source_cols:
-        cell, is_original = logical_row.get(source_col, (None, False))
+        cell = logical_row.get(source_col)
         if cell is None:
             continue
 
@@ -842,28 +851,27 @@ def _get_source_cells(
             continue
 
         seen.add(cell_id)
-        result.append((cell, is_original))
+        result.append(cell)
 
     return result
 
 
-def _merge_source_cells(source_cells: list[tuple[TableCell, bool]], base_col: int) -> TableCell:
+def _merge_source_cells(source_cells: list[TableCell], base_col: int) -> TableCell:
     if not source_cells:
         return TableCell()
 
     if len(source_cells) == 1:
-        cell, is_original_rowspan = source_cells[0]
+        cell = source_cells[0]
 
         return _copy_cell(
             cell,
             col=base_col,
-            colspan=1,
-            is_original_rowspan=is_original_rowspan,
+            colspan=1
         )
 
     source_cells = sorted(
         source_cells,
-        key=lambda cell: int(cell[0].col),
+        key=lambda cell: int(cell.col),
     )
 
     text = _merge_cell_text(source_cells)
@@ -871,10 +879,10 @@ def _merge_source_cells(source_cells: list[tuple[TableCell, bool]], base_col: in
 
     rowspan = max(
         max(int(cell.rowspan), 1)
-        for cell, _ in source_cells
+        for cell in source_cells
     )
 
-    first, is_original_rowspan = source_cells[0]
+    first = source_cells[0]
 
     return _copy_cell(
         first,
@@ -883,14 +891,13 @@ def _merge_source_cells(source_cells: list[tuple[TableCell, bool]], base_col: in
         colspan=1,
         rowspan=rowspan,
         bbox=bbox,
-        is_original_rowspan=is_original_rowspan
     )
 
 
-def _merge_cell_text(cells: list[tuple[TableCell, bool]]) -> str:
+def _merge_cell_text(cells: list[TableCell]) -> str:
     texts: list[str] = []
 
-    for cell, _ in cells:
+    for cell in cells:
         text = cell.text
         text = str(text).strip()
 
@@ -903,11 +910,11 @@ def _merge_cell_text(cells: list[tuple[TableCell, bool]]) -> str:
 
 
 def _merge_cell_bbox(
-        cells: list[tuple[TableCell, bool]],
+        cells: list[TableCell],
 ) -> list[float] | None:
     bboxes = [
         cell.bbox
-        for cell, _ in cells
+        for cell in cells
         if cell.bbox is not None
     ]
 
