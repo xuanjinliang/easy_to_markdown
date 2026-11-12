@@ -766,8 +766,9 @@ def _build_logical_rows(rows: list[TableRow]) -> list[dict[int, TableCell]]:
                     )
 
                 for logical_col in range(start_col, start_col + colspan):
-                    cell.is_original_rowspan = logical_row == cell.row
-                    occupancy[logical_row][logical_col] = cell
+                    new_cell = copy.deepcopy(cell)
+                    new_cell.is_original_rowspan = logical_row == cell.row and logical_col == cell.col
+                    occupancy[logical_row][logical_col] = new_cell
 
     return occupancy[1:]
 
@@ -882,10 +883,13 @@ def _merge_source_cells(source_cells: list[TableCell], base_col: int) -> TableCe
         for cell in source_cells
     )
 
-    first = source_cells[0]
+    result = next(
+        (item for item in source_cells if item.is_original_rowspan),
+        source_cells[0]
+    )
 
     return _copy_cell(
-        first,
+        result,
         text=text,
         col=base_col,
         colspan=1,
@@ -904,7 +908,8 @@ def _merge_cell_text(cells: list[TableCell]) -> str:
         if not text:
             continue
 
-        texts.append(text)
+        if cell.is_original_rowspan:
+            texts.append(text)
 
     return " ".join(texts)
 

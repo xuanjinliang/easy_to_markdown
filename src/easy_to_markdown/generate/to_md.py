@@ -1,9 +1,11 @@
+from easy_to_markdown import llm_model
 from easy_to_markdown.llm_model import APIModelConfig
 from easy_to_markdown.pkg.common import ensure_dir
 import os
 from pathlib import Path
 from uuid import uuid4
 import shutil
+import copy
 import numpy as np
 from PIL import Image
 from easy_to_markdown.pkg.enum_class import BlockType
@@ -157,8 +159,16 @@ class MarkdownJsonWriter:
                                     cell.bbox = bbox
 
                             if len(row_cell_list) > 0:
+                                new_list = copy.deepcopy(table_cell)
+                                for item in new_list:
+                                    item.is_original_rowspan = False
+
+                                for extra_item in row_cell_list[1:]:
+                                    new_extra_row = copy.deepcopy(new_list) + extra_item
+                                    table_rows_extra.append(new_extra_row)
+
                                 table_cell += row_cell_list[0]
-                                table_rows_extra = row_cell_list[1:]
+
                             continue
 
                     for block in blocks:
@@ -204,7 +214,11 @@ class MarkdownJsonWriter:
 
         rows_list = self.set_only_table_cell(table_info)
         for table_cell in rows_list:
-            table.add_row(cells=table_cell)
+            filtered_list = [
+                item for item in table_cell
+                if item.is_original_rowspan
+            ]
+            table.add_row(cells=filtered_list)
 
         table.calculate_spans(tolerance=self.tolerance)
         return table
@@ -247,20 +261,52 @@ class MarkdownJsonWriter:
         if len(img_info) <= 1:
             return markdown_file_result
 
-        marge_split_list = list(zip(img_info, img_info[1:]))
-        massages = []
-        for item in marge_split_list:
-            image1, image2 = item
+        # release
+        # marge_split_list = list(zip(img_info, img_info[1:]))
+        # massages = []
+        # for item in marge_split_list:
+        #     image1, image2 = item
+        #
+        #     message = self.llm_model.set_diff_prompt_image_message(
+        #         prompt_image_list=[("Image 1", [image1.merge_image_path]), ("Image 2", [image2.merge_image_path])],
+        #         system_info_type=2
+        #     )
+        #     massages.append(message)
+        #
+        # results = await self.llm_model.predict(messages=massages, schema=Description)
+        # if len(results) == 0:
+        #     return markdown_file_result
 
-            message = self.llm_model.set_diff_prompt_image_message(
-                prompt_image_list=[("Image 1", [image1.merge_image_path]), ("Image 2", [image2.merge_image_path])],
-                system_info_type=2
-            )
-            massages.append(message)
-
-        results = await self.llm_model.predict(messages=massages, schema=Description)
-        if len(results) == 0:
-            return markdown_file_result
+        # debug
+        results: list[llm_model.ModelInfo] = [
+            llm_model.ModelInfo(
+                content='''{"truncated": false, "reason":"1"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": true, "reason":"2"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": true, "reason":"3"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": true, "reason":"4"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": true, "reason":"5"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": true, "reason":"6"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": true, "reason":"7"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": false, "reason":"8"}''',
+            ),
+            llm_model.ModelInfo(
+                content='''{"truncated": false, "reason":"9"}''',
+            ),
+        ]
 
         for index, item in enumerate(results):
             if not isinstance(item, ModelInfo):
