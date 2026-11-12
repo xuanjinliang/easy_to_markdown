@@ -262,51 +262,51 @@ class MarkdownJsonWriter:
             return markdown_file_result
 
         # release
-        # marge_split_list = list(zip(img_info, img_info[1:]))
-        # massages = []
-        # for item in marge_split_list:
-        #     image1, image2 = item
-        #
-        #     message = self.llm_model.set_diff_prompt_image_message(
-        #         prompt_image_list=[("Image 1", [image1.merge_image_path]), ("Image 2", [image2.merge_image_path])],
-        #         system_info_type=2
-        #     )
-        #     massages.append(message)
-        #
-        # results = await self.llm_model.predict(messages=massages, schema=Description)
-        # if len(results) == 0:
-        #     return markdown_file_result
+        marge_split_list = list(zip(img_info, img_info[1:]))
+        massages = []
+        for item in marge_split_list:
+            image1, image2 = item
+
+            message = self.llm_model.set_diff_prompt_image_message(
+                prompt_image_list=[("Image 1", [image1.merge_image_path]), ("Image 2", [image2.merge_image_path])],
+                system_info_type=2
+            )
+            massages.append(message)
+
+        results = await self.llm_model.predict(messages=massages, schema=Description)
+        if len(results) == 0:
+            return markdown_file_result
 
         # debug
-        results: list[llm_model.ModelInfo] = [
-            llm_model.ModelInfo(
-                content='''{"truncated": false, "reason":"1"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": true, "reason":"2"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": true, "reason":"3"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": true, "reason":"4"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": true, "reason":"5"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": true, "reason":"6"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": true, "reason":"7"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": false, "reason":"8"}''',
-            ),
-            llm_model.ModelInfo(
-                content='''{"truncated": false, "reason":"9"}''',
-            ),
-        ]
+        # results: list[llm_model.ModelInfo] = [
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"1"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"2"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"3"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"4"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"5"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"6"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"7"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"8"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"9"}''',
+        #     ),
+        # ]
 
         for index, item in enumerate(results):
             if not isinstance(item, ModelInfo):
