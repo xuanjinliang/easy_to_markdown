@@ -431,11 +431,15 @@ def format_table_info(
             if total_height > 0 else 0
         )
 
-        min_y = min_y1
-        max_y = min_y2
-        if ratio >= 0.8:
-            min_y = max_y1
-            max_y = max_y2
+        min_y = max_y1
+        max_y = max_y2
+        if ratio < 0.8:
+            min_y = min_y1
+            max_y = min_y2
+
+            for item in rows_list:
+                x1, y1, x2, y2 = item.bbox
+                item.bbox = [x1, float(min_y), x2, float(min(y2, max_y))]
 
         row_info = RowInfo(
             width=float(max_x) - float(min_x),
