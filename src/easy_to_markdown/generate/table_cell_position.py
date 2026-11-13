@@ -408,8 +408,8 @@ def format_table_info(
         if not rows_list:
             continue
 
-        all_col = list(chain.from_iterable(rows))
-        coords = np.asarray([c.bbox for c in all_col], dtype=np.float32)
+        # all_col = list(chain.from_iterable(rows_list))
+        coords = np.asarray([c.bbox for c in rows_list], dtype=np.float32)
         x1 = coords[:, 0]
         y1 = coords[:, 1]
         x2 = coords[:, 2]
@@ -417,8 +417,25 @@ def format_table_info(
 
         min_x = np.min(x1)
         max_x = np.max(x2)
-        min_y = np.min(y1)
-        max_y = np.max(y2)
+
+        max_y1 = np.min(y1)
+        max_y2 = np.max(y2)
+        min_y1 = np.max(y1)
+        min_y2 = np.min(y2)
+
+        total_height = max_y2 - max_y1
+        overlap_height = max(0, min_y2 - min_y1)
+
+        ratio = (
+            overlap_height / total_height
+            if total_height > 0 else 0
+        )
+
+        min_y = min_y1
+        max_y = min_y2
+        if ratio >= 0.8:
+            min_y = max_y1
+            max_y = max_y2
 
         row_info = RowInfo(
             width=float(max_x) - float(min_x),
