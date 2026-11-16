@@ -94,6 +94,7 @@ class MarkdownInfo(BaseModel):
     block_label_type: str = ""
     level: int = 0
     block_content: str = ""
+    is_html: bool = False
     block_image_content: Optional[str] = Field(default=None)
     table_info: Optional[Table] = None
     merged_position: tuple[int, int] | None = None

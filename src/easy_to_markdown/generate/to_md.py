@@ -110,6 +110,7 @@ class MarkdownJsonWriter:
                     if table_struct is not None:
                         markdown_info.table_info = table_struct
                         markdown_info.block_content = table_struct.to_html()
+                        markdown_info.is_html = True
             case _:
                 if isinstance(block.block_content, ModelInfo):
                     markdown_info.block_content = f"{block.block_content.content}"
@@ -171,14 +172,16 @@ class MarkdownJsonWriter:
 
                             continue
 
+                    is_html = False
                     for block in blocks:
                         markdown_info = self.set_content(block)
                         if markdown_info is None:
                             continue
 
                         content += markdown_info.block_content
+                        is_html = markdown_info.is_html
 
-                    table_cell.append(TableCell(text=content, bbox=cell.bbox))
+                    table_cell.append(TableCell(text=content, bbox=cell.bbox, is_html=is_html))
                     continue
 
                 content = cell.block_content.content if cell.block_content is not None else ""

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from lxml import etree
+from lxml import etree, html
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal, Iterable
 import numpy as np
@@ -26,6 +26,7 @@ class TableCell(BaseModel):
     colspan: int = Field(default=1, ge=1)
     tag: Literal["td", "th"] = "td"
     bbox: Optional[list[float]] = Field(default=None, min_length=4, max_length=4)
+    is_html: bool = Field(default=False)
     is_original_rowspan: bool = True
 
 
@@ -301,6 +302,28 @@ class HtmlTableRenderer:
         )
 
     @staticmethod
+    def set_html_content(
+            element: etree._Element,
+            content: str,
+    ) -> None:
+        if not content:
+            return
+
+        fragment = html.fragments_fromstring(content)
+
+        last_element = None
+
+        for node in fragment:
+            if isinstance(node, str):
+                if last_element is None:
+                    element.text = (element.text or "") + node
+                else:
+                    last_element.tail = (last_element.tail or "") + node
+            else:
+                element.append(node)
+                last_element = node
+
+    @staticmethod
     def set_text_with_br(
             element: etree._Element,
             text: str,
@@ -329,7 +352,10 @@ class HtmlTableRenderer:
         if cell.colspan > 1:
             td.set("colspan", str(cell.colspan), )
 
-        self.set_text_with_br(td, cell.text)
+        if cell.is_html:
+            self.set_html_content(td, cell.text)
+        else:
+            self.set_text_with_br(td, cell.text)
 
 
 def _get_first_row(table: Table) -> list[TableCell]:
