@@ -178,7 +178,7 @@ class MarkdownJsonWriter:
 
                         content += markdown_info.block_content
 
-                    table_cell.append(TableCell(html=content, bbox=cell.bbox))
+                    table_cell.append(TableCell(text=content, bbox=cell.bbox))
                     continue
 
                 content = cell.block_content.content if cell.block_content is not None else ""
@@ -304,7 +304,10 @@ class MarkdownJsonWriter:
         #         content='''{"truncated": false, "reason":"8"}''',
         #     ),
         #     llm_model.ModelInfo(
-        #         content='''{"truncated": false, "reason":"9"}''',
+        #         content='''{"truncated": true, "reason":"9"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"10"}''',
         #     ),
         # ]
 
@@ -352,7 +355,10 @@ class MarkdownJsonWriter:
     async def run(self, file_parsing_data: list[FileParsingResult]) -> MarkdownFileResult:
         img_info: list[ImgMergeInfo] = []
         children = []
-        for file_parsing_result in file_parsing_data:
+        for i, file_parsing_result in enumerate(file_parsing_data):
+            # debug
+            # if i == 10:
+            #     break
             page_info = file_parsing_result.img_info
             img_merge_info = ImgMergeInfo(
                 page_index=page_info.page_index,
