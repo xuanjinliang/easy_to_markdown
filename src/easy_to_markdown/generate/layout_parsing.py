@@ -96,7 +96,7 @@ class LayoutParsing:
                 message = self.llm_model.set_message(
                     prompt=prompt,
                     image_list=[image_path],
-                    system_info_type=1
+                    system_info_type=3
                 )
                 messages.append(message)
                 columns_index.append((i, j))

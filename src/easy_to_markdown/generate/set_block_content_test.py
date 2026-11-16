@@ -26,14 +26,27 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         image_path = os.path.join(
             pkg.PdfTempDir,
             "aws_2023_ba386fee-02ce-4f61-85d4-5e85926ce159",
-            "llm_crops_img",
-            "page_1",
-            "18_text.webp"
+            "crops_img",
+            "page_10",
+            "7_table",
+            "table_crop",
+            "row_1_1.webp"
         )
         ocr_content = OCRContent(
             content=[
-                "JinJin",
-                "By:",
+                "For your use of Designated Amazon EC2 Spot Instances under Eligible",
+                "Accounts in the applicable Service-Specific Regions qualified as",
+                "Selected Amazon EC2 Spot Instances, the applicable Service-Specific",
+                "Rate from the Qualifying Month will be $0.0075/vCPU/hour. For",
+                "clarity, for your use of Designated Amazon EC2 Spot Instances under",
+                "Eligible Accounts in the applicable Service-Specific Regions not",
+                "qualified as Selected Amazon EC2 Spot Instances, the applicable",
+                "Service-Specific Rate will continue to be $0.008/vCPU/hour.",
+                "Qualifying Month means the month AWS receives an Selected",
+                "Amazon EC2 Spot Instances Attestation provided such attestation is",
+                "received before the 20th day of such month; otherwise the second",
+                "month after receipt of such Selected Amazon EC2 Spot Instances",
+                "Attestation."
             ],
         )
         prompt = llm_model.set_ocr_content_prompt(ocr_content)
@@ -43,7 +56,7 @@ class TestLayout(unittest.IsolatedAsyncioTestCase):
         message = llm_model.set_message(
             prompt=prompt,
             image_list=[image_path],
-            system_info_type=1
+            system_info_type=3
         )
         results = await llm_model.predict(messages=[message])
         print(results[0].content)

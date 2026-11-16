@@ -14,18 +14,20 @@ class SetBlockContent:
 
     @staticmethod
     def set_system_info(system_info_type: int = 1) -> str:
-        prompt_path = ""
+        md_name = ""
 
         match system_info_type:
             case 1:
-                prompt_path = os.path.join(pkg.PromptDir, "doc_assistant.md")
+                md_name = "doc_assistant.md"
             case 2:
-                prompt_path = os.path.join(pkg.PromptDir, "image_truncation_assistant.md")
+                md_name = "image_truncation_assistant.md"
+            case 3:
+                md_name = "text_assistant.md"
 
-        if len(prompt_path) <= 0:
+        if len(md_name) <= 0:
             return ""
 
-        return Path(prompt_path).read_text(encoding="utf-8")
+        return Path(os.path.join(pkg.PromptDir, md_name)).read_text(encoding="utf-8")
 
     @staticmethod
     def set_ocr_content_prompt(ocr_content: OCRContent | None) -> str | None:
@@ -46,8 +48,8 @@ class SetBlockContent:
             prompt=prompt, image_list=image_list, system_info=system_info)
 
     def set_diff_prompt_image_message(self,
-                                   prompt_image_list: list[tuple[str, list[str]]],
-                                   system_info_type: int) -> list[dict[str, Any]]:
+                                      prompt_image_list: list[tuple[str, list[str]]],
+                                      system_info_type: int) -> list[dict[str, Any]]:
         system_info = self.set_system_info(system_info_type)
         messages = self.local_llm.set_message(prompt="", image_list=[], system_info=system_info)
 
