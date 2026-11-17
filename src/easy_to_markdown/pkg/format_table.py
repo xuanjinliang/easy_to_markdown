@@ -591,9 +591,14 @@ def build_row_mapping(
     if not base or not source:
         return None
 
+    max_cell_count = max(
+        (max(item) for item in [base, source]),
+        default=1,
+    )
+
     mapping: dict[int, list[int]] = {
-        base_col: []
-        for base_col in sorted(base)
+        (base_col + 1): []
+        for base_col in range(max_cell_count)
     }
 
     for source_col, source_cell in source.items():

@@ -95,10 +95,12 @@ class TableStructureRecognition:
         img_list_pos: list[str] = []
 
         for i, file_parsing in enumerate(file_parsing_result):
-            set_info = TablePosition(img_index=i)
             for j, block in enumerate(file_parsing.blocks):
                 if block.block_label == "table":
-                    set_info.blocks_index = j
+                    set_info = TablePosition(
+                        img_index=i,
+                        blocks_index=j
+                    )
                     if block.crop_path is None:
                         continue
                     set_info.crop_path = block.crop_path

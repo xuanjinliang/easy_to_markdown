@@ -2,7 +2,7 @@ import os
 from easy_to_markdown import pkg
 from easy_to_markdown.pkg.common import ensure_dir
 from pathlib import Path
-import fitz
+import pymupdf
 import uuid
 from pydantic import BaseModel, Field
 from PIL import Image
@@ -34,7 +34,7 @@ class PdfToImage:
 
         output_dir = os.path.join(pkg.PdfTempDir, f"{file_path.stem}_{str(uuid.uuid4())}")
         ensure_dir(output_dir)
-        self.doc = fitz.open(pdf_info.pdf_path)
+        self.doc = pymupdf.open(pdf_info.pdf_path)
         self.file_path = file_path
         self.output_dir = output_dir
 
@@ -44,10 +44,10 @@ class PdfToImage:
         for page_index in range(len(doc)):
             page = doc[page_index]
 
-            mat = fitz.Matrix(dpi / 72, dpi / 72)
+            mat = pymupdf.Matrix(dpi / 72, dpi / 72)
             pm = page.get_pixmap(matrix=mat, alpha=False)
             if pm.width > 4500 or pm.height > 4500:
-                pm = page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False)
+                pm = page.get_pixmap(matrix=pymupdf.Matrix(1, 1), alpha=False)
 
             yield page_index + 1, pm
 
