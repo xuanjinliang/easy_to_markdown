@@ -316,10 +316,43 @@ class MarkdownJsonWriter:
         #         content='''{"truncated": true, "reason":"10"}''',
         #     ),
         #     llm_model.ModelInfo(
-        #         content='''{"truncated": false, "reason":"11"}''',
+        #         content='''{"truncated": true, "reason":"11"}''',
         #     ),
         #     llm_model.ModelInfo(
         #         content='''{"truncated": false, "reason":"12"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"13"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"14"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"15"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"16"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"17"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"18"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"19"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"20"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": true, "reason":"21"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"22"}''',
+        #     ),
+        #     llm_model.ModelInfo(
+        #         content='''{"truncated": false, "reason":"23"}''',
         #     ),
         # ]
 
@@ -399,8 +432,6 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
     img_info = markdown_file_result.img_info
     children = markdown_file_result.children
 
-    record_merge_page = {}
-
     for index, item in enumerate(img_info):
         if len(item.merge_position) <= 1:
             continue
@@ -409,26 +440,28 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
         first_index = page_index[0]
         last_index = page_index[-1]
 
-        if first_index in record_merge_page:
-            record_merge_page[last_index] = record_merge_page[first_index]
-        else:
-            record_merge_page[last_index] = first_index
-
-        first_index = record_merge_page[last_index]
-
         first_page = children[first_index]
         last_page = children[last_index]
 
         first_page_last_item = first_page[-1]
 
-        if first_page_last_item.merged_position is not None:
-            merged_page_index, merged_child_index = first_page_last_item.merged_position
-            first_page_last_item = children[merged_page_index][merged_child_index]
+        first_page_index = first_index
+        first_page_last_item_index = len(first_page) - 1
+
+        while True:
+            if first_page_last_item.merged_position is not None:
+                first_page_index, first_page_last_item_index = first_page_last_item.merged_position
+                first_page_last_item = children[first_page_index][first_page_last_item_index]
+            else:
+                break
 
         last_page_first_item = last_page[0]
-        if last_page_first_item.merged_position is not None:
-            merged_page_index, merged_child_index = last_page_first_item.merged_position
-            last_page_first_item = children[merged_page_index][merged_child_index]
+        # while True:
+        #     if last_page_first_item.merged_position is not None:
+        #         merged_page_index, merged_child_index = last_page_first_item.merged_position
+        #         last_page_first_item = children[merged_page_index][merged_child_index]
+        #     else:
+        #         break
 
         if first_page_last_item.block_label_type != last_page_first_item.block_label_type:
             continue
@@ -470,4 +503,4 @@ def recover_truncated_content(markdown_file_result: MarkdownFileResult):
                     continue
                 first_page_last_item.block_content += last_page_first_item.block_content
 
-        last_page_first_item.merged_position = (page_index[0], len(children[page_index[0]]) - 1)
+        last_page_first_item.merged_position = (first_page_index, first_page_last_item_index)
