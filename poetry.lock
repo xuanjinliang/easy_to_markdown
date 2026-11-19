@@ -1539,7 +1539,7 @@ description = "Fast transfer of large files with the Hugging Face Hub."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(sys_platform == \"win32\" or sys_platform == \"emscripten\" or sys_platform == \"linux\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\") and (sys_platform == \"win32\" or sys_platform == \"emscripten\" or platform_machine == \"aarch64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"arm64\") and (platform_machine == \"AMD64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\")"
+markers = "platform_machine == \"aarch64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"arm64\""
 files = [
     {file = "hf_xet-1.8.0-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:c74e3751cbcdae9222c5170e8d788e83201a03dc5e5f4308a20f17a5b6023b56"},
     {file = "hf_xet-1.8.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:56735c2d4f416d7473fc986586b26a8756e067832ca4b7fdaad32a0d6f2ce740"},
@@ -1592,7 +1592,7 @@ description = "A minimal low-level HTTP client."
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
-markers = "sys_platform != \"emscripten\""
+markers = "sys_platform != \"emscripten\" and (sys_platform != \"emscripten\" or platform_machine != \"aarch64\" and platform_machine != \"x86_64\" and platform_machine != \"AMD64\")"
 files = [
     {file = "httpcore2-2.16.0-py3-none-any.whl", hash = "sha256:5c4358319f2602d984ad93182c9fee5160f22e9da7babdda870a5e7c4e2dc34f"},
     {file = "httpcore2-2.16.0.tar.gz", hash = "sha256:c72cd0413563b17e1cd8354677dff887466f8ec2551679759e93126534428643"},
@@ -1680,7 +1680,7 @@ description = "httpx2 transports for Emscripten/Pyodide, backed by the JavaScrip
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
-markers = "python_version >= \"3.12\" and sys_platform == \"emscripten\""
+markers = "sys_platform == \"emscripten\" and python_version >= \"3.12\""
 files = [
     {file = "httpx2_jsfetch-1.0-py3-none-any.whl", hash = "sha256:cb916b707601e69a07721aabc8f3f6659be3a6893bc1ff5c6f9e02241df2da32"},
     {file = "httpx2_jsfetch-1.0.tar.gz", hash = "sha256:70a0e3eabfef7cce5ad9c629f7d01ca05e418f586646f4ddf14782e4c1454c60"},
@@ -3009,7 +3009,7 @@ description = "CUBLAS native runtime libraries"
 optional = false
 python-versions = ">=3"
 groups = ["main"]
-markers = "sys_platform == \"win32\" and platform_system == \"Linux\" and platform_machine == \"AMD64\" or sys_platform == \"linux\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") and platform_system == \"Linux\""
+markers = "sys_platform == \"win32\" and platform_machine == \"AMD64\" and platform_system == \"Linux\" or sys_platform == \"linux\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") and platform_system == \"Linux\""
 files = [
     {file = "nvidia_cublas-13.4.1.3-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:4eb1472bf92b741e7cf24da7978dde251b58ddec2092d9f6a04f3623eb4e9a15"},
     {file = "nvidia_cublas-13.4.1.3-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:a5917cb642cfb07f4a0231ee16aec7e2e0357d8cb8b1b78a0c9c68dba3e6afc7"},
@@ -3026,7 +3026,7 @@ description = "CUBLAS native runtime libraries"
 optional = false
 python-versions = ">=3"
 groups = ["main"]
-markers = "(sys_platform != \"linux\" or platform_machine != \"aarch64\" and platform_machine != \"x86_64\") and platform_system == \"Linux\" and (sys_platform != \"win32\" or platform_machine != \"AMD64\")"
+markers = "(sys_platform != \"win32\" or platform_machine != \"AMD64\") and platform_system == \"Linux\" and (sys_platform != \"linux\" or platform_machine != \"aarch64\" and platform_machine != \"x86_64\")"
 files = [
     {file = "nvidia_cublas-13.10.0.20-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:dcc6d63884c53d07e267ce7e6feac17b2538cebaafec5db865736c3e28e4dc84"},
     {file = "nvidia_cublas-13.10.0.20-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:c5f3418c0a845232a8cabc58f6fa52cfae7d8bd3680d94c3907aca710fd48d70"},
@@ -3087,7 +3087,7 @@ description = "NVRTC native runtime libraries"
 optional = false
 python-versions = ">=3"
 groups = ["main"]
-markers = "(sys_platform != \"linux\" or platform_machine != \"aarch64\" and platform_machine != \"x86_64\") and platform_system == \"Linux\" and (sys_platform != \"win32\" or platform_machine != \"AMD64\")"
+markers = "(sys_platform != \"win32\" or platform_machine != \"AMD64\") and platform_system == \"Linux\" and (sys_platform != \"linux\" or platform_machine != \"aarch64\" and platform_machine != \"x86_64\")"
 files = [
     {file = "nvidia_cuda_nvrtc-13.5.37-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:86b4d68058807988b7d9af5b44917a0601e9c337f35ccd657bfb3c759ff8d8bc"},
     {file = "nvidia_cuda_nvrtc-13.5.37-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:36e4fa2a8ada293f5693d308e531c196ab6f91cf7a0ff479bf96a537d43a6096"},
@@ -5641,7 +5641,7 @@ description = "Verify certificates using native system trust stores"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "sys_platform != \"emscripten\""
+markers = "sys_platform != \"emscripten\" and (sys_platform != \"emscripten\" or platform_machine != \"aarch64\" and platform_machine != \"x86_64\" and platform_machine != \"AMD64\")"
 files = [
     {file = "truststore-0.10.5-py3-none-any.whl", hash = "sha256:9aaaedaefaf06d8b206278cf8b5012bc897f485a874503501e12d776df78951c"},
     {file = "truststore-0.10.5.tar.gz", hash = "sha256:30d36967ccaded5cbb38d602c433f53600036c79d502f4533a49b60a03bbefcd"},
@@ -6253,4 +6253,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "4d72cdcf7974043264b3305262a771bde0fbe81baeeea8bd5a79cdf1519d61f4"
+content-hash = "1e72c7227db9ed74c2519d5b0c79479cdf9944cd0e631f81dd197c3abe93f253"

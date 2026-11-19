@@ -60,14 +60,17 @@ class PdfToImage:
         img_suffix = self.pdf_info.img_suffix
         for page, pix in self.pdf_page_generator():
             output_path = os.path.join(output_image, f"{pkg.PageName}{page}.{img_suffix}")
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            width: int = pix.width
+            height: int = pix.height
+
+            img = Image.frombytes("RGB", (width, height), pix.samples)
             img.save(output_path, img_suffix, quality=100)
 
             image_info.append(ImageResponse(
                 page_index=page,
                 image_path=output_path,
-                width=pix.width,
-                height=pix.height,
+                width=width,
+                height=height,
             ))
 
         return PdfResponse(

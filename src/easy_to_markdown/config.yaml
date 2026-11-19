@@ -1,0 +1,10 @@
+pdf:
+  dpi: 200
+  img_suffix: webp
+
+llm:
+  mode: api
+  model: gpt-4.1
+  temperature: 0
+  base_url: https://api.openai.com/v1
+  api_key: 111111xxxxx

@@ -23,6 +23,7 @@ dependencies = [
     "mlx-vlm (>=0.6.10,<0.7.0)",
     "lxml (>=6.1.1,<7.0.0)",
     "openai (>=3.3.1,<4.0.0)",
+    "pyyaml (==6.0.2)",
 ]
 
 
@@ -34,6 +35,9 @@ build-backend = "poetry.core.masonry.api"
 packages = [
     { include = "easy_to_markdown", from = "src" }
 ]
+
+[tool.poetry.scripts]
+easy_to_markdown = "easy_to_markdown.cli:main"
 
 [tool.poetry.group.dev.dependencies]
 paddlepaddle = "^3.3.1"
